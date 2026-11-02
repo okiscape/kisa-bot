@@ -3,7 +3,7 @@ name: CI Build Check
 on:
     push:
         branches-ignore:
-            - master
+            - main
         paths:
             - "apps/bot/**"
             - "apps/backend/**"
@@ -34,6 +34,8 @@ jobs:
             filter_paths: |
                 src:
                     - 'apps/bot/**'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/ci.yml'
             dockerfile: apps/bot/Dockerfile
             context: apps/bot
             image_tag: kisa-bot:ci
@@ -52,6 +54,8 @@ jobs:
                     - 'turbo.json'
                     - 'package.json'
                     - 'pnpm-lock.yaml'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/ci.yml'
             dockerfile: apps/backend/Dockerfile
             context: .
             image_tag: kisa-backend:ci
@@ -70,6 +74,8 @@ jobs:
                     - 'turbo.json'
                     - 'package.json'
                     - 'pnpm-lock.yaml'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/ci.yml'
             dockerfile: apps/frontend/Dockerfile
             context: .
             image_tag: kisa-frontend:ci

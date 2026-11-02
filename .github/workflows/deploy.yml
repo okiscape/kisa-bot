@@ -3,7 +3,7 @@ name: Production Build and Push
 on:
     push:
         branches:
-            - master
+            - main
         paths:
             - "apps/bot/**"
             - "apps/backend/**"
@@ -26,6 +26,8 @@ jobs:
             filter_paths: |
                 src:
                     - 'apps/bot/**'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/deploy.yml'
             dockerfile: apps/bot/Dockerfile
             context: apps/bot
             image_tag: ghcr.io/okiscape/kisa-bot:latest
@@ -45,6 +47,8 @@ jobs:
                     - 'turbo.json'
                     - 'package.json'
                     - 'pnpm-lock.yaml'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/deploy.yml'
             dockerfile: apps/backend/Dockerfile
             context: .
             image_tag: ghcr.io/okiscape/kisa-backend:latest
@@ -64,6 +68,8 @@ jobs:
                     - 'turbo.json'
                     - 'package.json'
                     - 'pnpm-lock.yaml'
+                    - '.github/workflows/build.service.yml'
+                    - '.github/workflows/deploy.yml'
             dockerfile: apps/frontend/Dockerfile
             context: .
             image_tag: ghcr.io/okiscape/kisa-frontend:latest
