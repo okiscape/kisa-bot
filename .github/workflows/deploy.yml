@@ -27,7 +27,7 @@ jobs:
                 src:
                     - 'apps/bot/**'
             dockerfile: apps/bot/Dockerfile
-            context: .
+            context: apps/bot
             image_tag: ghcr.io/okiscape/kisa-bot:latest
             push: true
 

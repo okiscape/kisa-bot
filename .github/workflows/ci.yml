@@ -35,7 +35,7 @@ jobs:
                 src:
                     - 'apps/bot/**'
             dockerfile: apps/bot/Dockerfile
-            context: .
+            context: apps/bot
             image_tag: kisa-bot:ci
             push: false
 
