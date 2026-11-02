@@ -31,6 +31,8 @@
             "res": {
                 "color_removed": "- Color removed",
                 "color_changed": "+ Color updated to #{color}",
+                "invalid_color": "Invalid HEX color. Please use 6 characters, for example: `FFFFFF`.",
+                "no_changes": "Nothing was changed.",
                 "about_removed": "- \"About me\" removed",
                 "about_updated": "+ \"About me\" updated",
                 "image_removed": "- Banner removed",

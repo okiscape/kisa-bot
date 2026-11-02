@@ -1,4 +1,4 @@
-from multiprocessing import Value
+import re
 
 import cog
 from utils.types import UserProfileRecord
@@ -31,6 +31,26 @@ timezoneslist = [
     "UTC+12",
 ]
 
+DEFAULT_PROFILE_COLOR = 0x262746
+_HEX_COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}$")
+
+# (text input id, profile column, removed translation, updated translation)
+PROFILE_FIELDS = (
+    ("hexcolor", "color", "color_removed", "color_changed"),
+    ("about", "about_me", "about_removed", "about_updated"),
+    ("custom_image", "custom_image", "image_removed", "image_updated"),
+)
+
+
+def parse_profile_color(value: str | None) -> int | None:
+    """Convert a stored/entered HEX color to int, returning None if it's invalid."""
+    if not value:
+        return None
+    value = value.strip().removeprefix("#")
+    if not _HEX_COLOR_PATTERN.fullmatch(value):
+        return None
+    return int(value, 16)
+
 
 class SettingModal(cog.ui.Modal):
     def __init__(
@@ -40,13 +60,10 @@ class SettingModal(cog.ui.Modal):
         default_profile: list[UserProfileRecord],
     ):
         self.bot = bot
-        self._profile_color = None
-        self._profile_about = None
-        self._profile_image = None
-        if len(default_profile) >= 1:
-            self._profile_about = default_profile[0].about_me
-            self._profile_color = default_profile[0].color
-            self._profile_image = default_profile[0].custom_image
+        self._profile = default_profile[0] if default_profile else None
+        self._profile_color = self._profile.color if self._profile else None
+        self._profile_about = self._profile.about_me if self._profile else None
+        self._profile_image = self._profile.custom_image if self._profile else None
 
         comp = [
             cog.ui.TextInput(
@@ -87,62 +104,48 @@ class SettingModal(cog.ui.Modal):
 
     async def callback(self, inter: cog.ModalInteraction):
         call = inter.text_values
-        updates = {}
-        done = []
+        updates: dict[str, str | None] = {}
+        done: list[str] = []
 
-        if call["hexcolor"] == "":
-            updates["color"] = None
-            done.append(
-                self.bot.translate(inter, "profile.edit_modal.res.color_removed")
+        # HEX color is the only field that needs validation before saving.
+        color = call["hexcolor"].strip().removeprefix("#")
+
+        if color and parse_profile_color(color) is None:
+            return await inter.response.send_message(
+                self.bot.translate(inter, "profile.edit_modal.res.invalid_color"),
+                ephemeral=True,
             )
-        elif call["hexcolor"] != self._profile_color:
-            updates["color"] = call["hexcolor"]
-            done.append(
-                self.bot.translate(
-                    inter,
-                    "profile.edit_modal.res.color_changed",
-                    color=call["hexcolor"],
+
+        call["hexcolor"] = color
+
+        for field, column, removed_key, updated_key in PROFILE_FIELDS:
+            value = call[field]
+            current = getattr(self._profile, column, None)
+
+            if value == "":
+                if current is None:
+                    continue
+                updates[column] = None
+                done.append(
+                    self.bot.translate(inter, f"profile.edit_modal.res.{removed_key}")
                 )
+            elif value != current:
+                updates[column] = value
+                done.append(
+                    self.bot.translate(
+                        inter,
+                        f"profile.edit_modal.res.{updated_key}",
+                        color=value,
+                    )
+                )
+
+        if not updates:
+            return await inter.response.send_message(
+                self.bot.translate(inter, "profile.edit_modal.res.no_changes"),
+                ephemeral=True,
             )
 
-        if call["about"] == "":
-            updates["about_me"] = None
-            done.append(
-                self.bot.translate(inter, "profile.edit_modal.res.about_removed")
-            )
-        elif call["about"] != self._profile_about:
-            updates["about_me"] = call["about"]
-            done.append(
-                self.bot.translate(inter, "profile.edit_modal.res.about_updated")
-            )
-
-        if call["custom_image"] == "":
-            updates["custom_image"] = None
-            done.append(
-                self.bot.translate(inter, "profile.edit_modal.res.image_removed")
-            )
-        elif call["custom_image"] != self._profile_image:
-            updates["custom_image"] = call["custom_image"]
-            done.append(
-                self.bot.translate(inter, "profile.edit_modal.res.image_updated")
-            )
-
-        if call.get("hexcolor"):
-            try:
-                int(call["hexcolor"], 16)
-                display_color = call["hexcolor"]
-            except ValueError:
-                pass
-        else:
-            display_color = 0x262746
-
-            updates["color"] = display_color
-
-        profile = await self.bot.database.readUserProfiles(
-            user_id=inter.author.id, cacheOverwrite=True
-        )
-
-        if not profile:
+        if self._profile is None:
             await self.bot.database.createUserProfile(
                 user_id=inter.author.id, **updates
             )
@@ -151,6 +154,8 @@ class SettingModal(cog.ui.Modal):
                 user_id=inter.author.id, **updates
             )
 
+        # The modal already knows the previous state, so only one read is needed:
+        # it returns the saved record and refreshes the cache.
         profile = await self.bot.database.readUserProfiles(
             user_id=inter.author.id, cacheOverwrite=True
         )
@@ -160,11 +165,12 @@ class SettingModal(cog.ui.Modal):
             )
 
         profile = profile[0]
+        display_color = parse_profile_color(profile.color)
+        if display_color is None:
+            display_color = DEFAULT_PROFILE_COLOR
 
         channel = self.bot.get_channel(self.bot.config.profile_edits_log_channel)
-        membership = cog.Embed(
-            color=int(display_color, 16), description=profile.about_me
-        )
+        membership = cog.Embed(color=display_color, description=profile.about_me)
         if profile.custom_image and profile.custom_image.startswith("http"):
             membership.set_image(profile.custom_image)
 
@@ -259,9 +265,13 @@ class Main(cog.Cog):
 
         profile = profile[0]
 
+        embed_color = parse_profile_color(profile.color)
+        if embed_color is None:
+            embed_color = DEFAULT_PROFILE_COLOR
+
         embed = cog.Embed(
             description=profile.about_me,
-            color=int(profile.color, 16),
+            color=embed_color,
             image=profile.custom_image,
         )
         await inter.edit_original_response(
