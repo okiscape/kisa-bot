@@ -74,7 +74,7 @@ class KisaBot(AutoShardedInteractionBot):
         return result
 
     async def on_ready(self):
-        self.logging.info("Ready", type="gateway")
+        self.logging.info(f"Ready as {self.user.name} ({self.user.id})", type="gateway")
         await self.setup_hook()
         self.loaded_cogs = self.cogs
         loaded = {}
