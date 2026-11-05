@@ -75,13 +75,7 @@ class InfoCommand(cog.Cog):
         channel: cog.TextChannel = cog.Param(description="Канал"),
     ):
         await inter.response.defer()
-        nsfw = self.bot.translate(
-            inter, "common.yes" if channel.is_nsfw() else "common.no"
-        )
-        news = self.bot.translate(
-            inter, "common.yes" if channel.is_news() else "common.no"
-        )
-        ts = int(channel.created_at.timestamp())
+        timestamp = int(channel.created_at.timestamp())
         embed = cog.Embed(
             title=self.bot.translate(
                 inter, "info.channel.title", channel_name=channel.name
@@ -90,11 +84,45 @@ class InfoCommand(cog.Cog):
                 inter,
                 "info.channel.description",
                 channel_id=channel.id,
-                channel_mention=channel.mention,
-                nsfw=nsfw,
-                news=news,
-                ts=ts,
+                channel_mention=channel.mention
             ),
+            fields=[
+                {
+                    "name": self.bot.translate(
+                        inter,
+                        key="info.channel.nsfw"
+                    ) + ": " + self.bot.translate(
+                        inter,
+                        key="common.yes" if channel.is_nsfw() else "common.no"
+                    ),"value": " ",
+                    "inline": True
+                },
+                {
+                    "name": self.bot.translate(
+                        inter,
+                        key="info.channel.news"
+                    )  + ": " + self.bot.translate(
+                        inter,
+                        key="common.yes" if channel.is_news() else "common.no"
+                    ), "value": " ",
+                    "inline": True
+                },
+                {
+                    "name": self.bot.translate(
+                        inter,
+                        key="info.channel.timestamps"
+                    ),
+                    "value": f"""`{timestamp}`
+                    `d`: <t:{timestamp}:d>
+                    `D`: <t:{timestamp}:D>
+                    `F`: <t:{timestamp}:F>
+                    `f`: <t:{timestamp}:f>
+                    `R`: <t:{timestamp}:R>
+                    `S`: <t:{timestamp}:S>
+                    `s`: <t:{timestamp}:s>""",
+                    "inline": False
+                }
+            ]
         )
         await inter.edit_original_response(embed=embed)
 

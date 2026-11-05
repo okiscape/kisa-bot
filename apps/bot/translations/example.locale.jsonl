@@ -7,13 +7,13 @@
                 "option": {
                     "nameofoption": {
                         "name": "name of option can be translated!",
-                        "description": "description of option",
-                    },
-                },
+                        "description": "description of option"
+                    }
+                }
             },
             "response": {
                 // here all the response translation keys
-            },
-        },
-    },
+            }
+        }
+    }
 }

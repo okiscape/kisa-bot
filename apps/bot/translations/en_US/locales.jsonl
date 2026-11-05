@@ -1,0 +1,13 @@
+{
+    "locales": {
+        "command": {
+            "description": "Locale management"
+        },
+        "reload": {
+            "description": "Reload locales without restarting the bot",
+            "no_access": "You don't have access.",
+            "error": "Failed to reload locales: `{error}`",
+            "success": "Locales reloaded."
+        }
+    }
+}

@@ -15,7 +15,11 @@
         },
         "channel": {
             "title": "Information about channel #{channel_name}",
-            "description": "Channel ID: `{channel_id}`\nMention: {channel_mention}\n\nNSFW: {nsfw}\n\nNews: {news}\n\nCreated: <t:{ts}:R> / at <t:{ts}:F>"
+            "description": 'Channel ID: `{channel_id}`
+            Mention: {channel_mention}',
+            "nsfw": "It's NSFW?",
+            "news": "For news?",
+            "timestamps": "\"Created at\" timestamps"
         },
         "server": {
             "title": "About {server_name}",
@@ -57,7 +61,7 @@
         },
         "main": {
             "title": "About kisa",
-            "summary": "**kisa** - a multifunctional bot for Discord servers\n\n> Moderation, logging, ratings, custom greetings, profiles, timestamps, reminders and more!",
+            "summary": "**kisa** - a multifunctional bot\n\n> Moderation, logging, ratings, custom greetings, profiles, timestamps, reminders and more!",
             "footer": "Requested by {user_display_name}",
             "field": {
                 "developer_server": {

@@ -1,4 +1,5 @@
 import cog
+from utils import config
 
 
 class DevUtilsCog(cog.Cog):
@@ -9,15 +10,11 @@ class DevUtilsCog(cog.Cog):
     async def cachecontrol(self, inter: cog.ApplicationCommandInteraction):
         pass
 
-    @cachecontrol.sub_command("clear", description="Clear database cache")
+    @cachecontrol.sub_command("clear", description="clear database cache")
     async def cacheclear(self, inter: cog.ApplicationCommandInteraction):
         await inter.response.defer(ephemeral=True)
         await self.bot.database._clearCache()
         await inter.edit_original_response("Cache cleared!")
-
-    @cog.slash_command(name="test_locale", guild_ids=[1489192937169359012])
-    async def test_locale(self, inter: cog.ApplicationCommandInteraction):
-        await inter.send(self.bot.translate(inter, "test_locales"))
 
     @cog.listener()
     async def on_interaction(self, inter: cog.Interaction):
@@ -112,6 +109,77 @@ class DevUtilsCog(cog.Cog):
             )
 
 
+class LocalesControlCog(cog.Cog):
+    """owner only locale management on the development guild"""
+
+    def __init__(self, bot: cog.KisaBot):
+        self.bot = bot
+
+    def _is_owner(self, inter: cog.ApplicationCommandInteraction) -> bool:
+        return (
+            config.bot_owner_id is not None and inter.author.id == config.bot_owner_id
+        )
+
+    @cog.slash_command(
+        name="locales",
+        description=cog.Localised(
+            "locale management", key="locales.command.description"
+        ),
+        guild_ids=[config.dev_guild_id],
+    )
+    async def locales(self, inter: cog.ApplicationCommandInteraction):
+        pass
+
+    @locales.sub_command(
+        name="reload",
+        description=cog.Localised(
+            "reload locales without restarting the bot",
+            key="locales.reload.description",
+        ),
+    )
+    async def locales_reload(self, inter: cog.ApplicationCommandInteraction):
+        if not self._is_owner(inter):
+            await inter.response.send_message(
+                self.bot.translate(inter, "locales.reload.no_access"),
+                ephemeral=True,
+            )
+            return
+
+        await inter.response.defer(ephemeral=True)
+        try:
+            self.bot.reload_locales()
+        except Exception as error:
+            self.bot.logging.error(error, type="locales")
+            await inter.edit_original_response(
+                self.bot.translate(inter, "locales.reload.error", error=error)
+            )
+            return
+
+        self.bot.logging.info("locales reloaded", type="locales")
+        await inter.edit_original_response(
+            self.bot.translate(inter, "locales.reload.success")
+        )
+
+    @locales.sub_command(
+        name="test", 
+        guild_ids=[1489192937169359012],
+        description=cog.Localised(
+            "test locale",
+            key="locales.test.description",
+        ),
+    )
+    async def test_locale(self, inter: cog.ApplicationCommandInteraction):
+        if not self._is_owner(inter):
+            await inter.response.send_message(
+                self.bot.translate(inter, "locales.reload.no_access"),
+                ephemeral=True,
+            )
+            return
+        await inter.send(self.bot.translate(inter, "locales.test.message"))
+
+
 def setup(bot: cog.KisaBot):
     bot.add_cog(DevUtilsCog(bot))
+    if config.dev_guild_id:
+        bot.add_cog(LocalesControlCog(bot))
     bot.cog_reload(__name__)
