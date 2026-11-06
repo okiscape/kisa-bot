@@ -50,19 +50,6 @@
 
     "about_me": "About me",
 
-    "active_developer": "Active Developer",
-    "hypesquad_balance": "HypeSquad: Balance",
-    "hypesquad_bravery": "HypeSquad: Bravery",
-    "hypesquad_brilliance": "HypeSquad: Brilliance",
-    "hypesquad_events": "HypeSquad Events",
-    "bug_hunter": "Bug Hunter",
-    "early_moderator": "Early Verified Moderator",
-    "certified_moderator": "Discord Certified Moderator",
-    "early_supporter": "Early Supporter",
-    "verified_bot": "Bot (verified)",
-    "bot": "Bot",
-    "verified_bot_developer": "Verified Bot Developer",
-
     "error_occurred": "An error occurred while fetching information",
     "user_not_found": "User not found",
 
