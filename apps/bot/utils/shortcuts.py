@@ -74,30 +74,7 @@ def generate_pick(choices: list[str]):
 class Translation:
     def __init__(self, i18n: disnake.LocalizationProtocol):
         self.i18n = i18n
-
-    def parsePlaceholders(
-        self,
-        inter: disnake.ApplicationCommandInteraction | disnake.ModalInteraction,
-        localed: str,
-        target: disnake.User | disnake.Member | None = None,
-    ) -> str:
-        placeholders = {
-            "requester.display_name": inter.author.display_name,
-            "requester.mention": inter.author.mention,
-            "requester.global_name": inter.author.global_name,
-            "requester.id": inter.author.id,
-        }
-        if target:
-            placeholders.update(
-                {
-                    "target.display_name": target.display_name,
-                    "target.mention": target.mention,
-                    "target.global_name": target.global_name,
-                    "target.id": target.id,
-                }
-            )
-        return replace_placeholders(localed, placeholders)
-
+        
     def translate(
         self,
         inter: disnake.ApplicationCommandInteraction | disnake.ModalInteraction,
@@ -108,8 +85,7 @@ class Translation:
         after = ""
         if text:
             after = text.get(inter.locale.value)
-
-        if after is None:
+        else:
             return f"{{{key}}}"
 
         return str(after.format(**kwargs) if kwargs else after)

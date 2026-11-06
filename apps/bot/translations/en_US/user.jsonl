@@ -1,33 +1,49 @@
 {
     "user": {
-        "usercommand.name": "Show user information",
-        "slash.description": "Show user information",
-        "slash.option.member.description": "Target member",
-        "response": {
-            "title": "Information about {name}",
+      "usercommand.name": "Show user information",
+      "slash.description": "Show user information",
+      "slash.option.member.description": "Target member",
+      "response": {
+        "title": "Information about {name}",
 
-            "id": "**User ID:** `{id}`",
-            "names": "**User name:** {global_name} ({username})",
+        "description": "
+          **User ID:** `{user_id}`
+          **User name:** {global_name} ({username})
+          **Status:** {emoji} {status_value}
+        ",
 
-            "status": "**Status:** {emoji} {value}",
+        "fields": {
+          "timestamps": {
+            "name": ">> timestamps",
+            "value": "
+              > **Joined**
+              \\> <t:{joined_at_ts}:f> - <t:{joined_at_ts}:R>
+              > **Account created**
+              \\> <t:{created_at_ts}:f> - <t:{created_at_ts}:R>
+            ",
+            "value.usertz": "> **User time**
+            \\> `{time}` ({tz})",
+          },
+          "flags": {
+            "name": ">> Flags"
+          },
+          "profile_files":{
+            "name": ">> Profile files",
 
-            "joined_at": "**Joined the **server: <t:{timestamp}:f> (<t:{timestamp}:R>)",
-            "created_at": "**Account created:** <t:{timestamp}:f> (<t:{timestamp}:R>)",
-            "timezone": "**Current time:** {time} ({tz})",
+            "global_banner": "\\> [Global banner]({banner})",
+            "guild_banner": "\\> [Guild banner]({banner})",
+            "global_avatar": "\\> [Global avatar]({avatar})",
+            "guild_avatar": "\\> [Guild avatar]({avatar})",
+          }
+        },
 
-            "global_banner": "[Global banner]({banner})",
-            "guild_banner": "[Guild banner]({banner})",
-            "global_avatar": "[Global avatar]({avatar})",
-            "guild_avatar": "[Guild avatar]({avatar})",
-            "media_files": "**Profile files:** {links}",
-
-            "spotify": {
-                "author": "{name} is currently listening to...",
-                "artist": "**Artist**: {spotify.artist}",
-                "album": "**Album**: {spotify.album}"
-            },
-            "social_rating": "**{rating}**"
-        }
+        "spotify": {
+            "author": "{name} is currently listening to...",
+            "artist": "**Artist**: {spotify.artist}",
+            "album": "**Album**: {spotify.album}"
+        },
+        "social_rating": "**{rating}**"
+      }
     },
 
     "about_me": "About me",
@@ -51,5 +67,5 @@
     "timezone_set": "Timezone set to {zone}\nTime: `{time}`",
 
     "self_delete_button": "Delete message",
-    "test_locales": "en_US locale"
+    "test_locales": "en_US locale confirmed"
 }

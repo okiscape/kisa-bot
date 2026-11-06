@@ -213,7 +213,7 @@ class Main(cog.Cog):
                 self.bot.translate(inter, "profile.timezone.error.invalid_timezone")
             )
         try:
-            zone_code = int(zone.replace("UTC ", "") or 0)
+            zone_code = int(zone.replace("UTC", "") or 0)
         except:
             zone_code = 0
 

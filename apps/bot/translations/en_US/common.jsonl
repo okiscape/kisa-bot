@@ -12,6 +12,26 @@
             "online": "Online",
             "idle": "Idle",
             "offline": "Offline"
+        },
+        "user_flags": {
+            "public": {
+                "staff": "Discord Staff",
+                "partner": "Discord Partner",
+                "bug_hunter": "Discord Bug Hunter",
+                "bug_hunter_2": "Discord Bug Hunter 2",
+                "hypesquad_bravery": "Hypesquad: Bravery",
+                "hypesquad_brilliance": "Hypesquad: Brilliance",
+                "hypesquad_balance": "Hypesquad: Balance",
+                "early_supporter": "Early Supporter",
+                "system": "System",
+                "verified_bot": "Verified Bot",
+                "verified_bot_developer": "Verified Bot Developer",
+                "bot": "Bot",
+                "moderator": "Certified Discord Moderator",
+                "spammer": "Spammer",
+                "active_developer": "Active Developer"
+            },
+            "mfa_sms": "Multi-factor through SMS"
         }
     }
 }

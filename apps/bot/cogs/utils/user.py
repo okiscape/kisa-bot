@@ -57,11 +57,7 @@ class User(cog.Cog):
             "dnd": (
                 self.bot.custom_emojis.status_dnd,
                 self.bot.translate(inter, "dnd"),
-            ),
-            "online": (
-                self.bot.custom_emojis.status_online,
-                self.bot.translate(inter, "common.status.online"),
-            ),
+            )
         }
         status_emoji, status_text = status_map.get(
             str(member.status),
@@ -89,16 +85,16 @@ class User(cog.Cog):
         if "mobile" in client_status:
             service.append(self.bot.translate(inter, "common.device.mobile"))
 
-        serversi = ", ".join(service) if service else None
+        devices = ", ".join(service) if service else None
 
-        media_links = []  # list of formatted translations. Guild avatar, Global avatar, Global banner, Guild banner
+        media_links = []
 
         fetched_user = await self.bot.fetch_user(member.id)
         if fetched_user.banner:
             media_links.append(
                 self.bot.translate(
                     inter,
-                    "user.response.global_banner",
+                    "user.response.fields.profile_files.global_banner",
                     banner=fetched_user.banner.url,
                 )
             )
@@ -106,7 +102,7 @@ class User(cog.Cog):
             media_links.append(
                 self.bot.translate(
                     inter,
-                    "user.response.guild_banner",
+                    "user.response.fields.profile_files.guild_banner",
                     banner=member.guild_banner.url,
                 )
             )
@@ -114,7 +110,7 @@ class User(cog.Cog):
             media_links.append(
                 self.bot.translate(
                     inter,
-                    "user.response.global_avatar",
+                    "user.response.fields.profile_files.global_avatar",
                     avatar=member.avatar.url,
                 )
             )
@@ -122,19 +118,25 @@ class User(cog.Cog):
             media_links.append(
                 self.bot.translate(
                     inter,
-                    "user.response.guild_avatar",
+                    "user.response.fields.profile_files.guild_avatar",
                     avatar=member.guild_avatar.url,
                 )
             )
 
-        description = f"""
-{self.bot.translate(inter, "user.response.id", id=member.id)}
-{self.bot.translate(inter, "user.response.names", global_name=member.global_name, username=member.name)}
-{self.bot.translate(inter, "user.response.status", emoji=status_emoji, value=status_text)} {f"({serversi})" if serversi else ""}
-{self.bot.translate(inter, "user.response.joined_at", timestamp=times_j)}
-{self.bot.translate(inter, "user.response.created_at", timestamp=times_c)}
-{self.bot.translate(inter, "user.response.media_files", links=", ".join(media_links))}
-"""
+        description = self.bot.translate(inter,
+            "user.response.description",
+            user_id=member.id,
+            global_name=member.global_name,
+            username=member.name,
+            emoji=status_emoji, status_value=status_text,
+        )
+
+        field_timestamps = self.bot.translate(inter,
+            "user.response.fields.timestamps.value",
+            joined_at_ts=times_j,
+            created_at_ts=times_c
+        )
+
         usersettings = await self.bot.database.readUserSettings(member.id)
         if usersettings:
             userset = usersettings[0]
@@ -145,12 +147,46 @@ class User(cog.Cog):
                 else:
                     zone_code = 0
                 timezone = await cog.sh.get_time_in_timezone(zone_code)
-                description += self.bot.translate(
+                field_timestamps += self.bot.translate(
                     inter,
-                    "user.response.timezone",
+                    "user.response.fields.timestamps.value.usertz",
                     tz=userset.timezone,
                     time=timezone.strftime(format="%H:%M:%S %d/%m/%Y"),
                 )
+
+        embed = cog.Embed(
+            title=self.bot.translate(
+                inter, "user.response.title", name=member.display_name
+            ),
+            color=custom_color,
+            description=description,
+            thumbnail=member.display_avatar,
+            image=member.guild_banner or fetched_user.banner,
+            fields=[
+                cog.EmbedField(
+                    name=self.bot.translate(inter, "user.response.fields.timestamps.name"),
+                    value=field_timestamps,
+                    inline=False
+                ),
+                cog.EmbedField(
+                    name=self.bot.translate(inter, "user.response.fields.profile_files.name"),
+                    value="\n".join(media_links),
+                    inline=True
+                )
+            ]
+        )
+
+        membership = None
+        if profile and (profile.about_me or profile.custom_image):
+            membership = cog.Embed(
+                color=custom_color,
+                image=getattr(profile, "custom_image", None),
+                description=getattr(profile, "about_me", None),
+            )
+
+        embeds = [embed]
+        if membership:
+            embeds.append(membership)
 
         spotify_embed = None
         for activity in member.activities:
@@ -172,40 +208,21 @@ class User(cog.Cog):
                     url=activity.track_url,
                     description=desc,
                     thumbnail=activity.album_cover_url,
-                    author={
-                        "name": self.bot.translate(
+                    author=cog.EmbedAuthor(
+                        name=self.bot.translate(
                             inter,
                             "user.response.spotify.author",
                             name=member.display_name or member.name,
                         ),
-                        "icon": member.avatar.url,
-                    },
+                        icon_url=member.avatar.url,
+                    ),
                 )
                 break
 
-        membership = None
-        if profile and (profile.about_me or profile.custom_image):
-            membership = cog.Embed(
-                color=custom_color,
-                image=getattr(profile, "custom_image", None),
-                description=getattr(profile, "about_me", None),
-            )
-        embed = cog.Embed(
-            title=self.bot.translate(
-                inter, "user.response.title", name=member.display_name
-            ),
-            color=custom_color,
-            description=description,
-            thumbnail=member.display_avatar,
-        )
-
-        embedss = [embed]
-        if membership:
-            embedss.append(membership)
         if spotify_embed:
-            embedss.append(spotify_embed)
+            embeds.append(spotify_embed)
 
-        await inter.edit_original_response(embeds=embedss, components=[])
+        await inter.edit_original_response(embeds=embeds, components=[])
 
     @cog.guild_only()
     @cog.slash_command(
@@ -220,10 +237,7 @@ class User(cog.Cog):
         ),
     ):
         await inter.response.defer()
-
-        print("slash used")
         await self._user_info(inter, member)
-        print("slash responded")
 
     @cog.guild_only()
     @cog.user_command(name=disnake.Localized(key="user.usercommand.name"))

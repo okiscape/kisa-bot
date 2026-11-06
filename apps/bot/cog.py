@@ -1,5 +1,6 @@
 """Custom cog class"""
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
@@ -55,6 +56,7 @@ from disnake import (
     member,
     ui,
     utils,
+    enums
 )
 from disnake import (
     Embed as ___Embed,
@@ -98,32 +100,34 @@ CommandCallback = Callable[
 View = ui.View
 
 
+@dataclass
+class EmbedField:
+    """Embed field"""
+
+    name: str
+    value: str
+    inline: bool = False
+
+
+@dataclass
+class EmbedAuthor:
+    """Embed author"""
+
+    name: str
+    url: str | None = None
+    icon_url: str | None = None
+
+
+@dataclass
+class EmbedFooter:
+    """Embed footer"""
+
+    text: str
+    icon_url: str | None = None
+
+
 class Embed(___Embed):
-    """Кастомный эмбед
-    Филды:
-
-    [
-            {
-                    "name": "Имя филда",
-                    "value": "Значение филда"
-            }, ...
-    ]
-
-    Автор:
-
-    {
-            "name": "Имя автора",
-            "url": "кликаемная ссылка",
-            "avatar_url": "ссылка на аватарку"
-    }
-
-    Футер:
-
-    {
-            "text": "Текст футера",
-            "icon": "Иконка футера"
-    }
-    """
+    """Custom embed class."""
 
     def __init__(
         self,
@@ -137,9 +141,9 @@ class Embed(___Embed):
         color: int | Colour | Any | None = None,
         image: str | Asset | None = None,
         thumbnail: str | Asset | None = None,
-        fields: list[dict[str, str, bool]] | None = None,
-        author: dict[str, str, str] | None = None,
-        footer: str | dict[str, str] | None = None,
+        fields: list[EmbedField] | None = None,
+        author: EmbedAuthor | None = None,
+        footer: str | EmbedFooter | None = None,
     ) -> None:
 
         self._files = []
@@ -160,38 +164,19 @@ class Embed(___Embed):
             self.set_thumbnail(thumbnail)
 
         if fields:
-            try:
-                for field in fields:
-                    try:
-                        if field["inline"] != None:
-                            inline = field["inline"]
-                        else:
-                            inline = field["inline"]
-                    except:
-                        inline = False
-                    self.add_field(
-                        name=field["name"], value=field["value"], inline=inline
-                    )
-            except:
-                pass
+            for field in fields:
+                self.add_field(
+                    name=field.name, value=field.value, inline=field.inline
+                )
 
         if author:
-            try:
-                try:
-                    url = author["url"]
-                except:
-                    url = None
-                try:
-                    icon_url = author["avatar_url"]
-                except:
-                    icon_url = None
-                self.set_author(name=author["name"], url=url, icon_url=icon_url)
-            except:
-                pass
+            self.set_author(
+                name=author.name, url=author.url, icon_url=author.icon_url
+            )
 
         if footer:
-            if isinstance(footer, dict):
-                self.set_footer(text=footer["text"], icon_url=footer["icon"])
+            if isinstance(footer, EmbedFooter):
+                self.set_footer(text=footer.text, icon_url=footer.icon_url)
             else:
                 self.set_footer(text=footer)
 

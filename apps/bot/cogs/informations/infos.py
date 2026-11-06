@@ -87,32 +87,34 @@ class InfoCommand(cog.Cog):
                 channel_mention=channel.mention
             ),
             fields=[
-                {
-                    "name": self.bot.translate(
+                cog.EmbedField(
+                    name=self.bot.translate(
                         inter,
                         key="info.channel.nsfw"
                     ) + ": " + self.bot.translate(
                         inter,
                         key="common.yes" if channel.is_nsfw() else "common.no"
-                    ),"value": " ",
-                    "inline": True
-                },
-                {
-                    "name": self.bot.translate(
+                    ),
+                    value=" ",
+                    inline=True
+                ),
+                cog.EmbedField(
+                    name=self.bot.translate(
                         inter,
                         key="info.channel.news"
                     )  + ": " + self.bot.translate(
                         inter,
                         key="common.yes" if channel.is_news() else "common.no"
-                    ), "value": " ",
-                    "inline": True
-                },
-                {
-                    "name": self.bot.translate(
+                    ),
+                    value=" ",
+                    inline=True
+                ),
+                cog.EmbedField(
+                    name=self.bot.translate(
                         inter,
                         key="info.channel.timestamps"
                     ),
-                    "value": f"""`{timestamp}`
+                    value=f"""`{timestamp}`
                     `d`: <t:{timestamp}:d>
                     `D`: <t:{timestamp}:D>
                     `F`: <t:{timestamp}:F>
@@ -120,8 +122,8 @@ class InfoCommand(cog.Cog):
                     `R`: <t:{timestamp}:R>
                     `S`: <t:{timestamp}:S>
                     `s`: <t:{timestamp}:s>""",
-                    "inline": False
-                }
+                    inline=False
+                )
             ]
         )
         await inter.edit_original_response(embed=embed)
@@ -369,15 +371,15 @@ class InfoCommand(cog.Cog):
             url=str(member.avatar.url) if member.avatar else None,
             color=0x333333,
             timestamp=datetime.datetime.now(),
-            author={
-                "name": f"{member.global_name} | {member.name}",
-                "icon": member.display_avatar.url,
-            },
+            author=cog.EmbedAuthor(
+                name=f"{member.global_name} | {member.name}",
+                icon_url=member.display_avatar.url,
+            ),
             image=member.display_avatar.url,
-            footer={
-                "text": self.bot.translate(inter, "info.avatar.footer"),
-                "icon": inter.author.display_avatar.url,
-            },
+            footer=cog.EmbedFooter(
+                text=self.bot.translate(inter, "info.avatar.footer"),
+                icon_url=inter.author.display_avatar.url,
+            ),
         )
         if member.display_avatar != member.avatar:
             e.set_thumbnail(url=member.avatar.url)

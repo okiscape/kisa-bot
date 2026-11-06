@@ -418,7 +418,7 @@ class Settings(cog.Cog):
                 title=f"[ - ] {cog.utils.escape_markdown(inter.author.display_name)}",
                 description=done_fare,
                 color=color,
-                author={"name": "Это превью прощания"},
+                author=cog.EmbedAuthor(name="Это превью прощания"),
             )
             try:
                 if settings["custom_fare_image"]:

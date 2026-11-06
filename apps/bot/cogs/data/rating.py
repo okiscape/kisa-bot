@@ -15,7 +15,7 @@ class Rating(cog.Cog):
     @rating.sub_command(
         name="view",
         description=cog.Localised(
-            "Look at someone else's or your rating", key="rating_view_desc"
+            "Look at someone else's or your rating", key="rating.view.description"
         ),
     )
     async def view(
