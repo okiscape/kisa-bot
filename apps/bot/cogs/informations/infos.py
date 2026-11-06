@@ -253,7 +253,7 @@ class InfoCommand(cog.Cog):
         )
 
     @cog.slash_command(
-        name="info", description=cog.Localised("Bot information", key="info_desc")
+        name="info", description=cog.Localised("Bot information", key="info.main.description")
     )
     async def info(self, inter: cog.ApplicationCommandInteraction):
         await inter.response.defer()
@@ -277,14 +277,14 @@ class InfoCommand(cog.Cog):
                 "info.main.field.developer_server.value",
                 invite_url=config.support_invite_url,
             ),
-            inline=False,
+            inline=True,
         )
         embed.add_field(
             name=self.bot.translate(inter, "info.main.field.created_at.title"),
             value=self.bot.translate(
                 inter, "info.main.field.created_at.value", timestamp=bot_created
             ),
-            inline=False,
+            inline=True,
         )
 
         embed.add_field(
@@ -295,7 +295,7 @@ class InfoCommand(cog.Cog):
                 number=config.version_number,
                 name=config.version_name,
             ),
-            inline=False,
+            inline=True,
         )
 
         cmd_sum = (
@@ -313,6 +313,16 @@ class InfoCommand(cog.Cog):
                 slash_count=len(self.bot.all_slash_commands),
                 message_count=len(self.bot.all_message_commands),
                 user_count=len(self.bot.all_user_commands),
+            ),
+            inline=True,
+        )
+
+        embed.add_field(
+            name=self.bot.translate(inter, "info.main.field.metrics.title"),
+            value=self.bot.translate(
+                inter,
+                "info.main.field.metrics.value",
+                servers=len(self.bot.guilds),
             ),
             inline=True,
         )

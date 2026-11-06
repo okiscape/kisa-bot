@@ -161,7 +161,7 @@ class LocalesControlCog(cog.Cog):
         )
 
     @locales.sub_command(
-        name="test", 
+        name="test",
         guild_ids=[1489192937169359012],
         description=cog.Localised(
             "test locale",
@@ -169,13 +169,7 @@ class LocalesControlCog(cog.Cog):
         ),
     )
     async def test_locale(self, inter: cog.ApplicationCommandInteraction):
-        if not self._is_owner(inter):
-            await inter.response.send_message(
-                self.bot.translate(inter, "locales.reload.no_access"),
-                ephemeral=True,
-            )
-            return
-        await inter.send(self.bot.translate(inter, "locales.test.message"))
+        await inter.send(inter.locale.value + " " + self.bot.translate(inter, "locales.test.message"))
 
 
 def setup(bot: cog.KisaBot):

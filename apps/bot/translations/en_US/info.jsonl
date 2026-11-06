@@ -61,24 +61,36 @@
         },
         "main": {
             "title": "About kisa",
-            "summary": "**kisa** - a multifunctional bot\n\n> Moderation, logging, ratings, custom greetings, profiles, timestamps, reminders and more!",
+            "description": "Bot information",
+            "summary": '**kisa** - an open-source multi tool discord bot with plenty of features
+            > Moderation, logging, ratings, custom greetings, profiles, integrations and more!',
             "footer": "Requested by {user_display_name}",
             "field": {
                 "developer_server": {
-                    "title": "\ud83d\udc68\u200d\ud83d\udcbb Developer server",
-                    "value": "[Click here to join]({invite_url})"
+                    "title": ">> links",
+                    "value": "[Development Server]({invite_url})"
                 },
                 "created_at": {
-                    "title": "\ud83d\udcc5 Created",
-                    "value": "<t:{timestamp}:f> (<t:{timestamp}:R>)"
+                    "title": ">> created",
+                    "value": '<t:{timestamp}:f>
+                    <t:{timestamp}:R>'
                 },
                 "version": {
-                    "title": "\ud83c\udff7\ufe0f Version",
-                    "value": "`v{number}` \u2014 *{name}*"
+                    "title": ">> version",
+                    "value": "`v{number}` - *{name}*"
                 },
                 "commands": {
-                    "title": "\ud83d\udccb Commands",
-                    "value": "**Total: {cmd_sum}**\nSlash: {slash_count}\nMessage: {message_count}\nUser: {user_count}"
+                    "title": ">> commands",
+                    "value": "
+                    **Total: {cmd_sum}**
+                    > Slash: {slash_count}
+                    > Message: {message_count}
+                    > User: {user_count}"
+                },
+                "metrics": {
+                    "title": ">> metrics",
+                    "value": "
+                    Servers: {servers}"
                 }
             }
         }

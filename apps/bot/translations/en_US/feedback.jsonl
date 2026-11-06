@@ -1,0 +1,36 @@
+{
+    "feedback": {
+        "command": {
+            "description": "Submit feedback about the bot"
+        },
+        "modal": {
+            "title": "Bot feedback",
+            "rating": {
+                "label": "Rating",
+                "placeholder": {
+                    "positive": "The bot performs well.",
+                    "neutral": "The bot meets expectations.",
+                    "negative": "The bot needs improvement."
+                }
+            },
+            "comment": {
+                "label": "Additional comments (optional)"
+            }
+        },
+        "embed": {
+            "title": "Bot feedback",
+            "author_id": "Author ID: `{id}`",
+            "field": {
+                "rating": "Rating",
+                "comment": "Additional comments"
+            }
+        },
+        "response": {
+            "success": "Thank you for your feedback. Your response has been submitted successfully."
+        },
+        "error": {
+            "not_configured": "Feedback is currently unavailable. Please try again later.",
+            "channel_not_found": "Feedback could not be delivered. Please try again later."
+        }
+    }
+}
