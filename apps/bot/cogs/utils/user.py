@@ -47,25 +47,15 @@ class User(cog.Cog):
 
         status_map = {
             "offline": (
-                self.bot.custom_emojis.status_offline,
                 self.bot.translate(inter, "common.status.offline"),
             ),
             "idle": (
-                self.bot.custom_emojis.status_idle,
                 self.bot.translate(inter, "common.status.idle"),
             ),
             "dnd": (
-                self.bot.custom_emojis.status_dnd,
-                self.bot.translate(inter, "dnd"),
+                self.bot.translate(inter, "common.status.dnd"),
             )
         }
-        status_emoji, status_text = status_map.get(
-            str(member.status),
-            (
-                self.bot.custom_emojis.status_online,
-                self.bot.translate(inter, "common.status.online"),
-            ),
-        )
 
         if (
             member.activity
@@ -74,18 +64,19 @@ class User(cog.Cog):
         ):
             status_text = f"{cog.sh.rmark(member.activity.name)}"
         else:
-            status_text = f"{status_text}"
+            status_text = ""
 
-        service = []
+        devices = []
         client_status = getattr(member, "_client_status", {}) or {}
         if "desktop" in client_status:
-            service.append(self.bot.translate(inter, "common.device.desktop"))
+            devices.append(self.bot.translate(inter, "common.device.desktop"))
         if "web" in client_status:
-            service.append(self.bot.translate(inter, "common.device.web"))
+            devices.append(self.bot.translate(inter, "common.device.web"))
         if "mobile" in client_status:
-            service.append(self.bot.translate(inter, "common.device.mobile"))
-
-        devices = ", ".join(service) if service else None
+            devices.append(self.bot.translate(inter, "common.device.mobile"))
+        if "vr" in client_status:
+            devices.append(self.bot.translate(inter, "common.device.vr"))
+        devices = ", ".join(devices) if devices else None
 
         media_links = []
 
@@ -126,10 +117,49 @@ class User(cog.Cog):
         description = self.bot.translate(inter,
             "user.response.description",
             user_id=member.id,
-            global_name=member.global_name,
-            username=member.name,
-            emoji=status_emoji, status_value=status_text,
+            display_name=(
+                "\n" + self.bot.translate(inter, 
+                    "user.response.description.display_name",
+                    display_name=member.display_name
+                ) if member.display_name else ""
+            ),
+            global_name=member.global_name if 
+                not member.bot else f"{member.name}#{member.tag}",
+            username=f"({member.name})" if not member.bot else "",
+            status_type=member.status.value, status_value=status_text,
+
+            devices="\n" + self.bot.translate(inter, "user.response.description.status_from", devices=devices) if devices else ""
         )
+
+        badges = []
+        public_flag_names = set()
+
+        if member.bot: badges.append(self.bot.translate(inter, "common.bot"))
+
+        for name, enabled in member.public_flags:
+            if enabled:
+                public_flag_names.add(name)
+                badges.append(
+                    self.bot.translate(inter, f"common.user_flags.public.{name}")
+                )
+
+        for name, enabled in getattr(member, "flags", None) or ():
+            if enabled and name not in public_flag_names:
+                badges.append(
+                    self.bot.translate(inter, f"common.user_flags.member.{name}")
+                )
+
+        if (
+            member.avatar != fetched_user.avatar
+            or member.banner or member.guild_banner or fetched_user.banner
+            or member.premium_since
+        ):
+            badges.append(
+                self.bot.translate(
+                    inter,
+                    "common.user_flags.public.nitro"
+                )
+            )
 
         field_timestamps = self.bot.translate(inter,
             "user.response.fields.timestamps.value",
@@ -154,6 +184,31 @@ class User(cog.Cog):
                     time=timezone.strftime(format="%H:%M:%S %d/%m/%Y"),
                 )
 
+        embed_fields = [
+            cog.EmbedField(
+                name=self.bot.translate(inter, "user.response.fields.timestamps.name"),
+                value=field_timestamps,
+                inline=False
+            ),
+        ]
+
+        embed_fields.append(
+            cog.EmbedField(
+                name=self.bot.translate(inter, "user.response.fields.profile_files.name"),
+                value="\n".join(media_links),
+                inline=True
+            )
+        )
+
+        if badges:
+            embed_fields.append(
+                cog.EmbedField(
+                    name=self.bot.translate(inter, "user.response.fields.flags.name"),
+                    value="\n".join(f"{badge}" for badge in badges),
+                    inline=True
+                )
+            )
+
         embed = cog.Embed(
             title=self.bot.translate(
                 inter, "user.response.title", name=member.display_name
@@ -162,18 +217,7 @@ class User(cog.Cog):
             description=description,
             thumbnail=member.display_avatar,
             image=member.guild_banner or fetched_user.banner,
-            fields=[
-                cog.EmbedField(
-                    name=self.bot.translate(inter, "user.response.fields.timestamps.name"),
-                    value=field_timestamps,
-                    inline=False
-                ),
-                cog.EmbedField(
-                    name=self.bot.translate(inter, "user.response.fields.profile_files.name"),
-                    value="\n".join(media_links),
-                    inline=True
-                )
-            ]
+            fields=embed_fields
         )
 
         membership = None

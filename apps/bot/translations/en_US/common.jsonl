@@ -1,6 +1,7 @@
 {
     "common": {
         "yes": "Yes",
+        "bot": "Bot",
         "no": "No",
         "device": {
             "web": "Web",
@@ -18,20 +19,39 @@
                 "staff": "Discord Staff",
                 "partner": "Discord Partner",
                 "bug_hunter": "Discord Bug Hunter",
-                "bug_hunter_2": "Discord Bug Hunter 2",
+                "bug_hunter_level_2": "Discord Bug Hunter 2",
+                "hypesquad": "HypeSquad Events",
                 "hypesquad_bravery": "Hypesquad: Bravery",
                 "hypesquad_brilliance": "Hypesquad: Brilliance",
                 "hypesquad_balance": "Hypesquad: Balance",
                 "early_supporter": "Early Supporter",
+                "team_user": "Team User",
                 "system": "System",
                 "verified_bot": "Verified Bot",
                 "verified_bot_developer": "Verified Bot Developer",
-                "bot": "Bot",
-                "moderator": "Certified Discord Moderator",
+                "early_verified_bot_developer": "Early Verified Bot Developer",
+                "discord_certified_moderator": "Certified Discord Moderator",
+                "moderator_programs_alumni": "Discord Moderator Programs Alumni",
+                "http_interactions_bot": "HTTP Interactions Bot",
                 "spammer": "Spammer",
-                "active_developer": "Active Developer"
+                "active_developer": "Active Developer",
+                "nitro": "Nitro Subscriber",
             },
-            "mfa_sms": "Multi-factor through SMS"
+            "member": {
+                "did_rejoin": "Rejoined the server",
+                "completed_onboarding": "Completed onboarding",
+                "bypasses_verification": "Bypasses verification",
+                "started_onboarding": "Started onboarding",
+                "is_guest": "Guest",
+                "started_home_actions": "Started server guide actions",
+                "completed_home_actions": "Completed servergGuide actions",
+                "automod_quarantined_username": "Automod quarantined username",
+                "dm_settings_upsell_acknowledged": "Acknowledged DM settings upsell",
+                "automod_quarantined_guild_tag": "Automod quarantined guild tag"
+            },
+            "mfa_sms": "Multi-factor through SMS",
+            "premium_promo_dismissed": "Premium promotion dismissed",
+            "has_unread_urgent_messages": "Has unread urgent messages"
         }
     }
 }

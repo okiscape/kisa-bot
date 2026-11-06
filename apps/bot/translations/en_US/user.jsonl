@@ -7,10 +7,12 @@
         "title": "Information about {name}",
 
         "description": "
-          **User ID:** `{user_id}`
-          **User name:** {global_name} ({username})
-          **Status:** {emoji} {status_value}
+          **User ID:** `{user_id}`{display_name}
+          **Username:** {global_name} {username}
+          **Status:** `{status_type}` {status_value}{devices}
         ",
+        "description.display_name": "**Display name:** {display_name}",
+        "description.status_from": "\\> **From:** {devices}",
 
         "fields": {
           "timestamps": {
