@@ -10,7 +10,6 @@ KisaBot(
         "cogs.data.profile",
         "cogs.informations.feedback",
         "cogs.informations.infos",
-        "cogs.informations.reminder",
         "cogs.utils.cog_moderation",
         "cogs.utils.user",
         "cogs.utils.timestamp",
