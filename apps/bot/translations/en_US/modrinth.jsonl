@@ -32,7 +32,8 @@
             "bio": "Bio",
             "email": "Email",
             "user_id": "User ID",
-            "account_created": "Account created"
+            "account_created": "Account created",
+            "projects": "Projects"
         },
         "author": {
             "modpack": "Modpack author: [{author}]({url})\nLicense: {license}",

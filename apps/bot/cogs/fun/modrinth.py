@@ -601,18 +601,16 @@ class Modrinth(cog.Cog):
                     await inter.edit_original_response(embed=mod, components=button)
 
         elif project_type == "user":
-            uri = f"user/{query}"
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    url=f"https://api.modrinth.com/v2/{uri}"
+                    url=f"https://api.modrinth.com/v2/user/{query}"
                 ) as response:
                     modget = await response.json()
                 await session.close()
 
-            thumbnail = modget["avatar_url"]
             ide = modget["id"]
 
-            role = ""
+            fields = []
 
             if modget["role"] != None:
                 if modget["role"] == "developer":
@@ -620,23 +618,44 @@ class Modrinth(cog.Cog):
                 elif modget["role"] == "moderator":
                     role = self.bot.translate(inter, "modrinth.role.moderator")
 
+                fields.append(
+                    cog.EmbedField(
+                        name=self.bot.translate(inter, "modrinth.field.bio"),
+                        value=f"{role}" + (f"```{modget['bio']}```" if modget['bio'] else ""),
+                        inline=False,
+                    )
+                )
+
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    url=f"https://api.modrinth.com/v2/user/{query}/projects"
+                ) as response:
+                    target_projects = await response.json()
+                await session.close()
+
+            if target_projects:
+              _projects_field = []
+              for project in target_projects:
+                print(project)
+                _projects_field.append(
+                  f"[{project['title']}](https://modrinth.com/{project['project_type']}/{project['slug']}) - ⬇️ {project['downloads']} ❤️ {project['followers']}"
+                )
+              fields.append(
+                cog.EmbedField(
+                  name=self.bot.translate(inter, "modrinth.field.projects"),
+                  value="\n".join(_projects_field)
+                )
+              )
+
+
             embed = cog.Embed(
                 title=f"{modget['username']}",
                 url=f"https://modrinth.com/user/{ide}",
                 color=0x82E868,
+                fields=fields,
+                thumbnail=modget["avatar_url"]
             )
-
-            try:
-                embed.set_thumbnail(thumbnail)
-            except:
-                pass
-
-            if modget["bio"] != None:
-                embed.add_field(
-                    name=self.bot.translate(inter, "modrinth.field.bio"),
-                    value=f"{role}```{modget['bio']}```",
-                    inline=False,
-                )
 
             button = [
                 cog.ui.Button(
