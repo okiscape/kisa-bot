@@ -1,0 +1,74 @@
+{
+    "modrinth": {
+        "command": {
+            "description": "Search for mods, shaders, resource packs, modpacks, and users on Modrinth"
+        },
+        "option": {
+            "type": {
+                "description": "Select the type of information to search for",
+                "choices": {
+                    "modpack": "Modpack",
+                    "resourcepack": "Resource pack",
+                    "shader": "Shader",
+                    "mod": "Mod / Data pack / Plugin",
+                    "user": "User"
+                }
+            },
+            "query": {
+                "description": "Search query"
+            }
+        },
+        "error": {
+            "not_found": "No matching project was found.",
+            "invalid_type": "Unknown search type."
+        },
+        "field": {
+            "information": "Information",
+            "categories": "Categories",
+            "categories_shader": "Shader categories",
+            "description": "Description",
+            "dates": "Dates",
+            "statistics": "Statistics",
+            "bio": "Bio",
+            "email": "Email",
+            "user_id": "User ID",
+            "account_created": "Account created"
+        },
+        "author": {
+            "modpack": "Modpack author: [{author}]({url})\nLicense: {license}",
+            "resourcepack": "Resource pack author: [{author}]({url})\nLicense: {license}",
+            "shader": "Shader author: [{author}]({url})\nLicense: {license}",
+            "mod": "Mod author: [{author}]({url})\nLicense: {license}\nClient side: {client}\nServer side: {server}"
+        },
+        "dates": {
+            "modpack": "Modpack created: {created}\nLast updated: {updated}",
+            "resourcepack": "Resource pack created: {created}\nLast updated: {updated}",
+            "shader": "Shader created: {created}\nLast updated: {updated}",
+            "mod": "Mod created: {created}\nLast updated: {updated}"
+        },
+        "latest_version": {
+            "modpack": "Latest modpack version: {version}",
+            "resourcepack": "Latest resource pack version: {version}",
+            "shader": "Latest shader version: {version}",
+            "mod": "Latest mod version: {version}"
+        },
+        "statistics": "Downloads: {downloads}\nFollowers: {follows}",
+        "side": {
+            "required": "Required",
+            "optional": "Supported",
+            "unsupported": "Unsupported"
+        },
+        "role": {
+            "developer": "⚙ Developer",
+            "moderator": "🛡 Moderator"
+        },
+        "button": {
+            "modpack": "Modpack page",
+            "resourcepack": "Resource pack page",
+            "shader": "Shader page",
+            "mod": "Mod page",
+            "user": "User page",
+            "author": "Author page"
+        }
+    }
+}

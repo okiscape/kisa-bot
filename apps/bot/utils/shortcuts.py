@@ -74,7 +74,7 @@ def generate_pick(choices: list[str]):
 class Translation:
     def __init__(self, i18n: disnake.LocalizationProtocol):
         self.i18n = i18n
-        
+
     def translate(
         self,
         inter: disnake.ApplicationCommandInteraction | disnake.ModalInteraction,
@@ -82,10 +82,12 @@ class Translation:
         **kwargs,
     ) -> str:
         text = self.i18n.get(key)
-        after = ""
-        if text:
-            after = text.get(inter.locale.value)
-        else:
+        if not text:
+            return f"{{{key}}}"
+
+        # fall back to English while other locales are not available yet
+        after = text.get(inter.locale.value) or text.get("en-US")
+        if not after:
             return f"{{{key}}}"
 
         return str(after.format(**kwargs) if kwargs else after)

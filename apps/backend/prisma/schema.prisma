@@ -12,9 +12,6 @@ model UserSettings {
   timezone    String? @db.Text
   osuUsername  String? @map("osu_username") @db.Text
 
-  profile      UserProfile?  @relation("UserSettingsProfile")
-  socialRating SocialRating? @relation("UserSettingsRating")
-
   @@map("user_settings")
 }
 
@@ -23,8 +20,6 @@ model UserProfile {
   aboutMe      String?  @map("about_me") @db.Text
   color        String?  @db.Text
   customImage  String?  @map("custom_image") @db.Text
-
-  userSettings UserSettings @relation("UserSettingsProfile", fields: [userId], references: [userId])
 
   @@map("user_profiles")
 }
@@ -63,8 +58,6 @@ model ServerSettings {
 model SocialRating {
   userId  BigInt @id @map("user_id")
   rating  Int    @default(0)
-
-  userSettings UserSettings @relation("UserSettingsRating", fields: [userId], references: [userId])
 
   @@map("social_rating")
 }

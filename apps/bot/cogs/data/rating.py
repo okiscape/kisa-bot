@@ -8,22 +8,37 @@ class Rating(cog.Cog):
     def __init__(self, bot: cog.KisaBot):
         self.bot = bot
 
-    @cog.slash_command(name="rating")
+    @cog.slash_command(
+        name="rating",
+        description=cog.Localised("Social rating", key="rating.command.description"),
+    )
     async def rating(self, inter: cog.ApplicationCommandInteraction):
         pass
 
     @rating.sub_command(
         name="view",
         description=cog.Localised(
-            "Look at someone else's or your rating", key="rating.view.description"
+            "View your own or another member's rating",
+            key="rating.view.description",
         ),
     )
     async def view(
         self,
         inter: cog.ApplicationCommandInteraction,
-        view: cog.Member = cog.Param(description="Чей рейтинг смотрим"),
+        view: cog.Member = cog.Param(
+            description=cog.Localised(
+                "Member whose rating to view",
+                key="rating.view.option.member.description",
+            )
+        ),
     ):
         await inter.response.defer(ephemeral=True)
+
+        if view.bot:
+            await inter.edit_original_response(
+                self.bot.translate(inter, "rating.error.bot_view")
+            )
+            return
 
         ratings = await self.bot.database.readSocialRating(user_id=view.id)
         if not ratings:
@@ -37,7 +52,9 @@ class Rating(cog.Cog):
 
         color = 0x1ED860 if ratingRecord.rating > 0 else 0xDF4E4E
         embed = cog.Embed(
-            title=await cog.sh.tbc(inter, f"Рейтинг {view.display_name}"),
+            title=self.bot.translate(
+                inter, "rating.view.title", name=view.display_name
+            ),
             description=f"## {ratingRecord.rating}",
             color=color,
         ).set_thumbnail(url=view.display_avatar.url)
@@ -46,22 +63,29 @@ class Rating(cog.Cog):
     @cooldown(1, 43200, BucketType.user)
     @rating.sub_command(
         name="add",
-        description=cog.Localised("Up someones rating", key="rating_add_desc"),
+        description=cog.Localised(
+            "Increase someone's rating", key="rating.add.description"
+        ),
     )
     async def add(
         self,
         inter: cog.ApplicationCommandInteraction,
-        view: cog.Member = cog.Param(description="Чей рейтинг поднимаем"),
+        view: cog.Member = cog.Param(
+            description=cog.Localised(
+                "Member whose rating to increase",
+                key="rating.add.option.member.description",
+            )
+        ),
     ):
         await inter.response.defer(ephemeral=True)
         if view == inter.author:
             await inter.edit_original_response(
-                await cog.sh.tbc(inter, "Рейтинг самому себе повысить нельзя")
+                self.bot.translate(inter, "rating.error.self_edit")
             )
             return
         if view.bot:
             await inter.edit_original_response(
-                await cog.sh.tbc(inter, "Рейтинг ботов нельзя повышать")
+                self.bot.translate(inter, "rating.error.bot_edit")
             )
             return
 
@@ -80,7 +104,9 @@ class Rating(cog.Cog):
 
         color = 0x1ED860 if newRating > 0 else 0xDF4E4E
         embed = cog.Embed(
-            title=await cog.sh.tbc(inter, f"Рейтинг {view.display_name} повышен"),
+            title=self.bot.translate(
+                inter, "rating.add.title", name=view.display_name
+            ),
             description=f"## {ratingRecord.rating} => {newRating}",
             color=color,
         ).set_thumbnail(url=view.display_avatar.url)
@@ -89,24 +115,36 @@ class Rating(cog.Cog):
     @cooldown(1, 43200, BucketType.user)
     @rating.sub_command(
         name="remove",
-        description=cog.Localised("Down someone's rating", key="rating_remove_desc"),
+        description=cog.Localised(
+            "Decrease someone's rating", key="rating.remove.description"
+        ),
     )
     async def remove(
         self,
         inter: cog.ApplicationCommandInteraction,
-        view: cog.Member = cog.Param(description="Чей рейтинг понижаем"),
+        view: cog.Member = cog.Param(
+            description=cog.Localised(
+                "Member whose rating to decrease",
+                key="rating.remove.option.member.description",
+            )
+        ),
     ):
         await inter.response.defer(ephemeral=True)
 
         blocked = {config.bot_owner_id} if config.bot_owner_id is not None else set()
-        if view == inter.author or inter.author.id in blocked:
+        if view == inter.author:
             await inter.edit_original_response(
-                await cog.sh.tbc(inter, "Вам запрещено взаимодействовать с рейтингами!")
+                self.bot.translate(inter, "rating.error.self_edit")
+            )
+            return
+        if inter.author.id in blocked:
+            await inter.edit_original_response(
+                self.bot.translate(inter, "rating.error.forbidden")
             )
             return
         if view.bot:
             await inter.edit_original_response(
-                await cog.sh.tbc(inter, "Рейтинг ботов нельзя понижать")
+                self.bot.translate(inter, "rating.error.bot_edit")
             )
             return
 
@@ -124,7 +162,9 @@ class Rating(cog.Cog):
 
         color = 0x1ED860 if newRating > 0 else 0xDF4E4E
         embed = cog.Embed(
-            title=await cog.sh.tbc(inter, f"Рейтинг {view.display_name} понижен"),
+            title=self.bot.translate(
+                inter, "rating.remove.title", name=view.display_name
+            ),
             description=f"## {ratingRecord.rating} => {newRating}",
             color=color,
         ).set_thumbnail(url=view.display_avatar.url)

@@ -4,38 +4,75 @@ import random
 import aiohttp
 import cog
 
+PROJECT_TYPES = ("modpack", "resourcepack", "shader", "mod", "user")
+
+
+async def _type_autocomplete(
+    inter: cog.ApplicationCommandInteraction, string: str
+) -> list[str]:
+    query = string.lower()
+    choices = []
+    for project_type in PROJECT_TYPES:
+        label = inter.bot.translate(
+            inter, f"modrinth.option.type.choices.{project_type}"
+        )
+        if query in label.lower():
+            choices.append(label)
+    return choices
+
 
 class Modrinth(cog.Cog):
     def __init__(self, bot: cog.KisaBot):
         self.bot = bot
 
+    def _project_type(
+        self, inter: cog.ApplicationCommandInteraction, value: str
+    ) -> str | None:
+        for project_type in PROJECT_TYPES:
+            label = self.bot.translate(
+                inter, f"modrinth.option.type.choices.{project_type}"
+            )
+            if value == label:
+                return project_type
+        return None
+
+    def _side_label(self, inter: cog.ApplicationCommandInteraction, value: str) -> str:
+        return self.bot.translate(inter, f"modrinth.side.{value}")
+
     @cog.slash_command(
         name="modrinth",
         description=cog.Localised(
-            string='Information about the Mod/Shader/Resource Pack/User on the "Modbrinth" platform',
-            key="modrinth_desc",
+            "Search for mods, shaders, resource packs, modpacks, and users on Modrinth",
+            key="modrinth.command.description",
         ),
     )
     async def project(
         self,
         inter: cog.ApplicationCommandInteraction,
         data_type: str = cog.Param(
-            description="Укажи тип информации которую будем искать",
-            autocomplete=cog.sh.generate_pick(
-                [
-                    "Пакет ресурсов / Ресурс пак",
-                    "Шейдер",
-                    "Мод / Дата-пак(Пакет данных) / Плагин",
-                    "Пользователь",
-                    "Сборка / Модпак",
-                ]
+            description=cog.Localised(
+                "Select the type of information to search for",
+                key="modrinth.option.type.description",
             ),
+            autocomplete=_type_autocomplete,
         ),
-        query: str = cog.Param(description="Запрос"),
+        query: str = cog.Param(
+            description=cog.Localised(
+                "Search query", key="modrinth.option.query.description"
+            )
+        ),
     ):
 
         await inter.response.defer(ephemeral=True)
-        if data_type == "Сборка / Модпак":
+
+        project_type = self._project_type(inter, data_type)
+        if project_type is None:
+            await inter.edit_original_response(
+                self.bot.translate(inter, "modrinth.error.invalid_type")
+            )
+            return
+
+        if project_type == "modpack":
             uri = f'search?query="{query}"&limit=1&facets=[["project_type:modpack"]]'
 
             async with aiohttp.ClientSession() as session:
@@ -47,9 +84,7 @@ class Modrinth(cog.Cog):
 
             if modget["hits"] == []:
                 await inter.edit_original_response(
-                    content=await self.bot.shortcuts.tbc(
-                        inter, "Такой проект не найден!"
-                    )
+                    content=self.bot.translate(inter, "modrinth.error.not_found")
                 )
 
             else:
@@ -71,16 +106,19 @@ class Modrinth(cog.Cog):
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Информация"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.information"),
+                    value=self.bot.translate(
                         inter,
-                        f"Автор сборки: [{first['author']}](https://modrinth.com/user/{author['username']})\nЛицензия: {first['license']}",
+                        "modrinth.author.modpack",
+                        author=first["author"],
+                        url=f"https://modrinth.com/user/{author['username']}",
+                        license=first["license"],
                     ),
                 )
 
                 try:
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Категории"),
+                        name=self.bot.translate(inter, "modrinth.field.categories"),
                         value=f"```{category}```",
                         inline=False,
                     )
@@ -89,7 +127,7 @@ class Modrinth(cog.Cog):
 
                 try:
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Описание"),
+                        name=self.bot.translate(inter, "modrinth.field.description"),
                         value=first["description"],
                         inline=False,
                     )
@@ -100,27 +138,33 @@ class Modrinth(cog.Cog):
                 udate = datetime.datetime.fromisoformat(first["date_modified"])
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Даты"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.dates"),
+                    value=self.bot.translate(
                         inter,
-                        f"Сборка создана: {cog.utils.format_dt(cdate, 'f')}\nСборка обновлена в последний раз: {cog.utils.format_dt(udate, 'f')}",
+                        "modrinth.dates.modpack",
+                        created=cog.utils.format_dt(cdate, "f"),
+                        updated=cog.utils.format_dt(udate, "f"),
                     ),
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(
-                        inter, f"Последняя версия сборки: {first['latest_version']}"
+                    name=self.bot.translate(
+                        inter,
+                        "modrinth.latest_version.modpack",
+                        version=first["latest_version"],
                     ),
                     value="|",
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, f"Статистика"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.statistics"),
+                    value=self.bot.translate(
                         inter,
-                        f"Установок: {first['downloads']}\nОтслеживаний: {first['follows']}",
+                        "modrinth.statistics",
+                        downloads=first["downloads"],
+                        follows=first["follows"],
                     ),
                     inline=True,
                 )
@@ -129,12 +173,12 @@ class Modrinth(cog.Cog):
 
                 button = [
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(inter, "Страница сборки"),
+                        label=self.bot.translate(inter, "modrinth.button.modpack"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/modpack/{first['slug']}",
                     ),
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(inter, "Страница автора"),
+                        label=self.bot.translate(inter, "modrinth.button.author"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/user/{author['username']}",
                         row=1,
@@ -155,7 +199,7 @@ class Modrinth(cog.Cog):
                 except:
                     await inter.edit_original_response(embed=mod, components=button)
 
-        elif data_type == "Пакет ресурсов / Ресурс пак":
+        elif project_type == "resourcepack":
             uri = (
                 f'search?query="{query}"&limit=1&facets=[["project_type:resourcepack"]]'
             )
@@ -169,9 +213,7 @@ class Modrinth(cog.Cog):
 
             if modget["hits"] == []:
                 await inter.edit_original_response(
-                    content=await self.bot.shortcuts.tbc(
-                        inter, "Такой проект не найден!"
-                    )
+                    content=self.bot.translate(inter, "modrinth.error.not_found")
                 )
 
             else:
@@ -193,18 +235,25 @@ class Modrinth(cog.Cog):
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Информация"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.information"),
+                    value=self.bot.translate(
                         inter,
-                        f"Автор пакета ресурсов: [{first['author']}](https://modrinth.com/user/{author['username']})\nЛицензия: {first['license']}",
+                        "modrinth.author.resourcepack",
+                        author=first["author"],
+                        url=f"https://modrinth.com/user/{author['username']}",
+                        license=first["license"],
                     ),
                 )
 
-                mod.add_field(name="Категории", value=f"```{category}```", inline=False)
+                mod.add_field(
+                    name=self.bot.translate(inter, "modrinth.field.categories"),
+                    value=f"```{category}```",
+                    inline=False,
+                )
 
                 try:
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Описание"),
+                        name=self.bot.translate(inter, "modrinth.field.description"),
                         value=first["description"],
                         inline=False,
                     )
@@ -214,28 +263,33 @@ class Modrinth(cog.Cog):
                 cdate = datetime.datetime.fromisoformat(first["date_created"])
                 udate = datetime.datetime.fromisoformat(first["date_modified"])
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Даты"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.dates"),
+                    value=self.bot.translate(
                         inter,
-                        f"П.Р. создан: {cog.utils.format_dt(cdate, 'f')}\nП.Р. обновнен в последний раз: {cog.utils.format_dt(udate, 'f')}",
+                        "modrinth.dates.resourcepack",
+                        created=cog.utils.format_dt(cdate, "f"),
+                        updated=cog.utils.format_dt(udate, "f"),
                     ),
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(
                         inter,
-                        f'Последняя версия "ресурс-пака": {first["latest_version"]}',
+                        "modrinth.latest_version.resourcepack",
+                        version=first["latest_version"],
                     ),
                     value="|",
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, f"Статистика"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.statistics"),
+                    value=self.bot.translate(
                         inter,
-                        f"Установок: {first['downloads']}\nОтслеживаний: {first['follows']}",
+                        "modrinth.statistics",
+                        downloads=first["downloads"],
+                        follows=first["follows"],
                     ),
                     inline=True,
                 )
@@ -244,15 +298,15 @@ class Modrinth(cog.Cog):
 
                 button = [
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(
-                            inter, "Страница ресурс-пака"
+                        label=self.bot.translate(
+                            inter, "modrinth.button.resourcepack"
                         ),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/resourcepack/{first['slug']}",
                         row=1,
                     ),
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(inter, "Страница автора"),
+                        label=self.bot.translate(inter, "modrinth.button.author"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/user/{author['username']}",
                         row=1,
@@ -285,7 +339,7 @@ class Modrinth(cog.Cog):
                 except:
                     await inter.edit_original_response(embed=mod, components=button)
 
-        elif data_type == "Шейдер":
+        elif project_type == "shader":
             uri = f'search?query="{query}"&limit=1&facets=[["project_type:shader"]]'
 
             async with aiohttp.ClientSession() as session:
@@ -296,7 +350,9 @@ class Modrinth(cog.Cog):
                 await session.close()
 
             if modget["hits"] == []:
-                await inter.edit_original_response(content="Такой проект не найден!")
+                await inter.edit_original_response(
+                    content=self.bot.translate(inter, "modrinth.error.not_found")
+                )
 
             else:
                 first = modget["hits"][0]
@@ -316,17 +372,29 @@ class Modrinth(cog.Cog):
                 )
 
                 mod.add_field(
-                    name="Информация",
-                    value=f"Автор шейдера: [{first['author']}](https://modrinth.com/user/{author['username']})\nЛицензия: {first['license']}",
+                    name=self.bot.translate(inter, "modrinth.field.information"),
+                    value=self.bot.translate(
+                        inter,
+                        "modrinth.author.shader",
+                        author=first["author"],
+                        url=f"https://modrinth.com/user/{author['username']}",
+                        license=first["license"],
+                    ),
                 )
 
                 mod.add_field(
-                    name="Категории шейдера", value=f"```{category}```", inline=False
+                    name=self.bot.translate(
+                        inter, "modrinth.field.categories_shader"
+                    ),
+                    value=f"```{category}```",
+                    inline=False,
                 )
 
                 try:
                     mod.add_field(
-                        name="Описание", value=first["description"], inline=False
+                        name=self.bot.translate(inter, "modrinth.field.description"),
+                        value=first["description"],
+                        inline=False,
                     )
                 except:
                     pass
@@ -334,20 +402,34 @@ class Modrinth(cog.Cog):
                 cdate = datetime.datetime.fromisoformat(first["date_created"])
                 udate = datetime.datetime.fromisoformat(first["date_modified"])
                 mod.add_field(
-                    name="Даты",
-                    value=f"Шейдер создан: {cog.utils.format_dt(cdate, 'f')}\n Шейдер обновнен в последний раз: {cog.utils.format_dt(udate, 'f')}",
+                    name=self.bot.translate(inter, "modrinth.field.dates"),
+                    value=self.bot.translate(
+                        inter,
+                        "modrinth.dates.shader",
+                        created=cog.utils.format_dt(cdate, "f"),
+                        updated=cog.utils.format_dt(udate, "f"),
+                    ),
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=f"Последняя версия шейдера: {first['latest_version']}",
+                    name=self.bot.translate(
+                        inter,
+                        "modrinth.latest_version.shader",
+                        version=first["latest_version"],
+                    ),
                     value="|",
                     inline=False,
                 )
 
                 mod.add_field(
-                    name=f"Статистика",
-                    value=f"Установок: {first['downloads']}\nОтслеживаний: {first['follows']}",
+                    name=self.bot.translate(inter, "modrinth.field.statistics"),
+                    value=self.bot.translate(
+                        inter,
+                        "modrinth.statistics",
+                        downloads=first["downloads"],
+                        follows=first["follows"],
+                    ),
                     inline=True,
                 )
 
@@ -361,13 +443,13 @@ class Modrinth(cog.Cog):
 
                 button = [
                     cog.ui.Button(
-                        label="Страница шейдера",
+                        label=self.bot.translate(inter, "modrinth.button.shader"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/shader/{first['slug']}",
                         row=1,
                     ),
                     cog.ui.Button(
-                        label="Страница автора",
+                        label=self.bot.translate(inter, "modrinth.button.author"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/user/{author['username']}",
                         row=2,
@@ -381,7 +463,7 @@ class Modrinth(cog.Cog):
                 except:
                     await inter.edit_original_response(embed=mod, components=button)
 
-        elif data_type == "Мод / Дата-пак(Пакет данных) / Плагин":
+        elif project_type == "mod":
             uri = f'search?query="{query}"&limit=1&facets=[["project_type:mod"]]'
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -391,28 +473,15 @@ class Modrinth(cog.Cog):
                 await session.close()
 
             if modget["hits"] == []:
-                await inter.edit_original_response(content="Такой проект не найден!")
+                await inter.edit_original_response(
+                    content=self.bot.translate(inter, "modrinth.error.not_found")
+                )
 
             else:
                 first = modget["hits"][0]
 
-                if first["client_side"] == "required":
-                    client = "Необходим"
-
-                elif first["client_side"] == "unsupported":
-                    client = "Не поддерживается"
-
-                elif first["client_side"] == "optional":
-                    client = "Поддерживается"
-
-                if first["server_side"] == "optional":
-                    server = "Поддерживается"
-
-                elif first["server_side"] == "unsupported":
-                    server = "Не поддерживается"
-
-                elif first["server_side"] == "required":
-                    server = "Необходим"
+                client = self._side_label(inter, first["client_side"])
+                server = self._side_label(inter, first["server_side"])
 
                 cdate = datetime.datetime.fromisoformat(first["date_created"])
                 udate = datetime.datetime.fromisoformat(first["date_modified"])
@@ -431,40 +500,47 @@ class Modrinth(cog.Cog):
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Информация"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.information"),
+                    value=self.bot.translate(
                         inter,
-                        f'Автор мода: [{first["author"]}](https://modrinth.com/user/{author["username"]})\nЛицензия: {first["license"]}\n"Клиент-сайд": {client}\n"Сервер-сайд": {server}',
+                        "modrinth.author.mod",
+                        author=first["author"],
+                        url=f"https://modrinth.com/user/{author['username']}",
+                        license=first["license"],
+                        client=client,
+                        server=server,
                     ),
                 )
 
                 try:
                     category = ", ".join(first["categories"])
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Категории"),
+                        name=self.bot.translate(inter, "modrinth.field.categories"),
                         value=f"```{category}```",
                         inline=False,
                     )
                 except:
                     category = ", ".join(first["display_categories"])
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Категории"),
+                        name=self.bot.translate(inter, "modrinth.field.categories"),
                         value=f"```{category}```",
                         inline=False,
                     )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Даты"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.dates"),
+                    value=self.bot.translate(
                         inter,
-                        f"Мод создан: {cog.utils.format_dt(cdate, 'f')}\n Мод обновнен в последний раз: {cog.utils.format_dt(udate, 'f')}",
+                        "modrinth.dates.mod",
+                        created=cog.utils.format_dt(cdate, "f"),
+                        updated=cog.utils.format_dt(udate, "f"),
                     ),
                     inline=False,
                 )
 
                 try:
                     mod.add_field(
-                        name=await self.bot.shortcuts.tbc(inter, "Описание"),
+                        name=self.bot.translate(inter, "modrinth.field.description"),
                         value=first["description"],
                         inline=False,
                     )
@@ -472,17 +548,21 @@ class Modrinth(cog.Cog):
                     pass
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(
-                        inter, f"Последняя версия мода: {first['latest_version']}"
+                    name=self.bot.translate(
+                        inter,
+                        "modrinth.latest_version.mod",
+                        version=first["latest_version"],
                     ),
                     value="|",
                 )
 
                 mod.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, f"Статистика"),
-                    value=await self.bot.shortcuts.tbc(
+                    name=self.bot.translate(inter, "modrinth.field.statistics"),
+                    value=self.bot.translate(
                         inter,
-                        f"Установок: {first['downloads']}\nОтслеживаний: {first['follows']}",
+                        "modrinth.statistics",
+                        downloads=first["downloads"],
+                        follows=first["follows"],
                     ),
                 )
 
@@ -500,13 +580,13 @@ class Modrinth(cog.Cog):
 
                 button = [
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(inter, "Страница мода"),
+                        label=self.bot.translate(inter, "modrinth.button.mod"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/mod/{first['slug']}",
                         row=1,
                     ),
                     cog.ui.Button(
-                        label=await self.bot.shortcuts.tbc(inter, "Страница автора"),
+                        label=self.bot.translate(inter, "modrinth.button.author"),
                         style=cog.ButtonStyle.url,
                         url=f"https://modrinth.com/user/{author['username']}",
                         row=2,
@@ -520,7 +600,7 @@ class Modrinth(cog.Cog):
                 except:
                     await inter.edit_original_response(embed=mod, components=button)
 
-        elif data_type == "Пользователь":
+        elif project_type == "user":
             uri = f"user/{query}"
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -536,9 +616,9 @@ class Modrinth(cog.Cog):
 
             if modget["role"] != None:
                 if modget["role"] == "developer":
-                    role = await self.bot.shortcuts.tbc(inter, "⚙ Разработчик")
+                    role = self.bot.translate(inter, "modrinth.role.developer")
                 elif modget["role"] == "moderator":
-                    role = await self.bot.shortcuts.tbc(inter, "🛡 Модератор")
+                    role = self.bot.translate(inter, "modrinth.role.moderator")
 
             embed = cog.Embed(
                 title=f"{modget['username']}",
@@ -553,12 +633,14 @@ class Modrinth(cog.Cog):
 
             if modget["bio"] != None:
                 embed.add_field(
-                    name="БИО", value=f"{role}```{modget['bio']}```", inline=False
+                    name=self.bot.translate(inter, "modrinth.field.bio"),
+                    value=f"{role}```{modget['bio']}```",
+                    inline=False,
                 )
 
             button = [
                 cog.ui.Button(
-                    label=await self.bot.shortcuts.tbc(inter, "Страница пользователя"),
+                    label=self.bot.translate(inter, "modrinth.button.user"),
                     style=cog.ButtonStyle.url,
                     url=f"https://modrinth.com/user/{modget['id']}",
                     row=1,
@@ -567,12 +649,12 @@ class Modrinth(cog.Cog):
 
             if modget["email"] != None:
                 embed.add_field(
-                    name=await self.bot.shortcuts.tbc(inter, "Электронная почта"),
+                    name=self.bot.translate(inter, "modrinth.field.email"),
                     value=modget["email"],
                 )
 
             embed.add_field(
-                name=await self.bot.shortcuts.tbc(inter, "ID пользователя"),
+                name=self.bot.translate(inter, "modrinth.field.user_id"),
                 value=modget["id"],
             )
 
@@ -582,7 +664,7 @@ class Modrinth(cog.Cog):
             date = datetime.datetime.fromisoformat(modget["created"])
 
             embed.add_field(
-                name=await self.bot.shortcuts.tbc(inter, "Аккаунт создан"),
+                name=self.bot.translate(inter, "modrinth.field.account_created"),
                 value=f"{cog.utils.format_dt(date, 'f')}\n{cog.utils.format_dt(date, 'R')}",
             )
 

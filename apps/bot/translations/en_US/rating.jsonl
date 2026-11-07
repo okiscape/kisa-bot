@@ -1,0 +1,40 @@
+{
+    "rating": {
+        "command": {
+            "description": "Social rating"
+        },
+        "view": {
+            "description": "View your own or another member's rating",
+            "option": {
+                "member": {
+                    "description": "Member whose rating to view"
+                }
+            },
+            "title": "{name}'s rating"
+        },
+        "add": {
+            "description": "Increase someone's rating",
+            "option": {
+                "member": {
+                    "description": "Member whose rating to increase"
+                }
+            },
+            "title": "{name}'s rating increased"
+        },
+        "remove": {
+            "description": "Decrease someone's rating",
+            "option": {
+                "member": {
+                    "description": "Member whose rating to decrease"
+                }
+            },
+            "title": "{name}'s rating decreased"
+        },
+        "error": {
+            "self_edit": "You cannot edit your own rating.",
+            "bot_edit": "Bot ratings cannot be edited.",
+            "bot_view": "Bot cannot have any rating.",
+            "forbidden": "You are not allowed to change this member's rating."
+        }
+    }
+}
