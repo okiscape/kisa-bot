@@ -636,15 +636,19 @@ class Modrinth(cog.Cog):
 
             if target_projects:
               _projects_field = []
+              _total_following, _total_downloads = 0, 0
+
               for project in target_projects:
-                print(project)
+                _total_downloads += project['downloads']
+                _total_following += project["followers"]
+
                 _projects_field.append(
-                  f"[{project['title']}](https://modrinth.com/{project['project_type']}/{project['slug']}) - ⬇️ {project['downloads']} ❤️ {project['followers']}"
+                  f"\\> [{project['title']}](https://modrinth.com/{project['project_type']}/{project['slug']}) - ⬇️ {project['downloads']} ❤️ {project['followers']}"
                 )
               fields.append(
                 cog.EmbedField(
                   name=self.bot.translate(inter, "modrinth.field.projects"),
-                  value="\n".join(_projects_field)
+                  value=f"> **Total:** ⬇️ {_total_downloads} ❤️ {_total_following}\n" + "\n".join(_projects_field)
                 )
               )
 
@@ -669,22 +673,22 @@ class Modrinth(cog.Cog):
             if modget["email"] != None:
                 embed.add_field(
                     name=self.bot.translate(inter, "modrinth.field.email"),
-                    value=modget["email"],
+                    value="\\> " + modget["email"],
                 )
-
-            embed.add_field(
-                name=self.bot.translate(inter, "modrinth.field.user_id"),
-                value=modget["id"],
-            )
-
-            if modget["github_id"] != None:
-                embed.add_field(name="GitHub ID", value=modget["github_id"])
 
             date = datetime.datetime.fromisoformat(modget["created"])
 
             embed.add_field(
                 name=self.bot.translate(inter, "modrinth.field.account_created"),
-                value=f"{cog.utils.format_dt(date, 'f')}\n{cog.utils.format_dt(date, 'R')}",
+                value=f"\\> {cog.utils.format_dt(date, 'f')}\n\\> {cog.utils.format_dt(date, 'R')}",
+            )
+
+            if modget["github_id"] != None:
+                embed.add_field(name="github ID", value="\\> " + modget["github_id"])
+
+            embed.add_field(
+                name=self.bot.translate(inter, "modrinth.field.user_id"),
+                value=f"\\> `{modget["id"]}`",
             )
 
             await inter.edit_original_response(embed=embed, components=button)

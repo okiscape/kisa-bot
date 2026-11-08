@@ -23,17 +23,17 @@
             "invalid_type": "Unknown search type."
         },
         "field": {
-            "information": "Information",
-            "categories": "Categories",
-            "categories_shader": "Shader categories",
-            "description": "Description",
-            "dates": "Dates",
-            "statistics": "Statistics",
-            "bio": "Bio",
-            "email": "Email",
-            "user_id": "User ID",
-            "account_created": "Account created",
-            "projects": "Projects"
+            "information": "\\>\\> information",
+            "categories": "\\>\\> categories",
+            "categories_shader": "\\>\\> shader categories",
+            "description": "\\>\\> description",
+            "dates": "\\>\\> dates",
+            "statistics": "\\>\\> statistics",
+            "bio": "\\>\\> bio",
+            "email": "\\>\\> email",
+            "user_id": "\\>\\> user ID",
+            "account_created": "\\>\\> account created",
+            "projects": "\\>\\> projects"
         },
         "author": {
             "modpack": "Modpack author: [{author}]({url})\nLicense: {license}",
