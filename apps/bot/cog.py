@@ -79,6 +79,7 @@ from disnake.ext.commands import (
     message_command,
     slash_command,
     user_command,
+    SubCommand
 )
 from disnake.ext.commands import Cog as disnake_cog
 from disnake.flags import InteractionContextTypes

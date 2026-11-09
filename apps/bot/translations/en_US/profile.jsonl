@@ -4,7 +4,7 @@
             "slash.description": "See the preview of your profile",
             "resp": {
                 "content": "This is how your profile looks now:",
-                "content.empty": "Your profile is empty!\nUse /profile commands to fill it up and preview it here!",
+                "content.empty": "Your profile is empty!\nUse {slash_command} to fill it up!",
                 "edit_profile_button": "Edit my profile"
             }
         },
@@ -13,6 +13,7 @@
             "option.zone.description": "Select UTC offset of your timezone.",
             "error.invalid_timezone": "Something wrong with timezone that you've chosen.\nSelect timezone between UTC-12 to UTC+12, as autocomplete suggest you."
         },
+        "edit.slash.description":"Edit your profile",
         "edit_modal": {
             "title": "Profile customization",
             "description": "Use \"-\" to reset any field",
@@ -39,6 +40,7 @@
                 "image_updated": "+ Banner updated",
                 "unknown_error": "Unknown error occured, profile updated.",
                 "log_message": "Profile <@{user_id}> changed!\nID: `{user_id}`",
+                "log_no_description": "*No description*",
                 "final_updates": "**Updates:**\n```diff\n{updates}\n```\n-# *Admins notified that you've updated your profile and can forcibly edit it.*"
             }
         }

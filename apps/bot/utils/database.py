@@ -445,8 +445,8 @@ class DatabaseManager:
 
     async def _clearCache(self):
         for attr_name in dir(self.caches):
-            if attr_name.startswith("_cache") and attr_name.endswith("Store"):
-                cache_store: AsyncLRUTTLCache = getattr(self, attr_name)
+            if isinstance(getattr(self.caches, attr_name), AsyncLRUTTLCache):
+                cache_store: AsyncLRUTTLCache = getattr(self.caches, attr_name)
                 await cache_store.clear()
 
     async def init_schema(self) -> None:

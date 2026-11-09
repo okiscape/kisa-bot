@@ -31,7 +31,6 @@ timezoneslist = [
     "UTC+12",
 ]
 
-DEFAULT_PROFILE_COLOR = 0x262746
 _HEX_COLOR_PATTERN = re.compile(r"^[0-9a-fA-F]{6}$")
 
 # (text input id, profile column, removed translation, updated translation)
@@ -166,11 +165,13 @@ class SettingModal(cog.ui.Modal):
 
         profile = profile[0]
         display_color = parse_profile_color(profile.color)
-        if display_color is None:
-            display_color = DEFAULT_PROFILE_COLOR
 
         channel = self.bot.get_channel(self.bot.config.profile_edits_log_channel)
-        membership = cog.Embed(color=display_color, description=profile.about_me)
+        membership = cog.Embed(
+            color=display_color,
+            description=profile.about_me
+            or self.bot.translate(inter, "profile.edit_modal.res.log_no_description"),
+        )
         if profile.custom_image and profile.custom_image.startswith("http"):
             membership.set_image(profile.custom_image)
 
@@ -257,35 +258,37 @@ class Main(cog.Cog):
                 custom_id="membership_edit_profile",
             )
         ]
-        if not profile:
+        if not profile or (
+            not profile[0].about_me and not profile[0].color and not profile[0].custom_image
+        ):
+            profile_edit_slash = self.bot.get_global_command_named("profile")
             return await inter.edit_original_response(
-                content=self.bot.translate(inter, "profile.preview.resp.content.empty"),
+                content=self.bot.translate(inter, "profile.preview.resp.content.empty", 
+                    slash_command=f"</profile edit:{profile_edit_slash.id}>"),
                 components=edit_buttons,
             )
-
         profile = profile[0]
 
         embed_color = parse_profile_color(profile.color)
-        if embed_color is None:
-            embed_color = DEFAULT_PROFILE_COLOR
 
         embed = cog.Embed(
-            description=profile.about_me,
+            description=profile.about_me or "**Preview description!**",
             color=embed_color,
             image=profile.custom_image,
         )
+
         await inter.edit_original_response(
             content=self.bot.translate(inter, "profile.preview.resp.content"),
-            embed=embed,
-            components=edit_buttons,
+            embed=embed
         )
 
-    @cog.listener(name="on_button_click")
-    async def check(self, inter: cog.MessageInteraction):
-        if inter.component.custom_id == "membership_edit_profile":
-            profile = await self.bot.database.readUserProfiles(inter.author.id)
-            await inter.response.send_modal(SettingModal(self.bot, inter, profile))
-
+    @profile.sub_command(
+        name="edit",
+        description=cog.Localized(key="profile.edit.slash.description"),
+    )
+    async def edit(self, inter: cog.ApplicationCommandInteraction):
+        profile = await self.bot.database.readUserProfiles(inter.author.id)
+        await inter.response.send_modal(SettingModal(self.bot, inter, profile))
 
 def setup(bot):
     bot.add_cog(Main(bot))
