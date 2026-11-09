@@ -21,7 +21,9 @@ class User(cog.Cog):
         self.bot = bot
 
     async def _user_info(
-        self, inter: cog.ApplicationCommandInteraction, member: cog.Member
+        self, 
+        inter: cog.ApplicationCommandInteraction, 
+        member: cog.Member
     ):
         profile_fetch = await self.bot.database.readUserProfiles(member.id)
         profile = profile_fetch[0] if profile_fetch else None
@@ -288,7 +290,7 @@ class User(cog.Cog):
     async def user(
         self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member
     ):
-        await inter.response.defer()
+        await inter.response.defer(ephemeral=True)
         await self._user_info(inter, member)
 
 
