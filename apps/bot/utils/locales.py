@@ -28,9 +28,11 @@ def flatten(data: dict[str, Any], prefix: str | None = None) -> dict[str, str]:
         if isinstance(value, dict):
             result.update(flatten(value, current_key))
         elif isinstance(value, str):
-            result[current_key] = value
+            result[current_key] = "\n".join(
+                line.strip() for line in value.splitlines()
+            )
         else:
-            result[current_key] = str(value)
+            result[current_key] = str(value).strip()
 
     return result
 
