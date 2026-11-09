@@ -165,6 +165,7 @@ class Embed(___Embed):
 
         if fields:
             for field in fields:
+                if not field: continue
                 self.add_field(
                     name=field.name, value=field.value, inline=field.inline
                 )
