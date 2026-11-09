@@ -56,6 +56,7 @@
             "response": ":ping_pong: Pong!\nLatency {ping}ms!"
         },
         "invite": {
+            "slash.description": "Invite me on your server",
             "add_label": "Add {bot_name}",
             "title": "Hi {user_name}!",
             "description": "Click the buttons below to invite the bot to your servers,\nor join our development server!",

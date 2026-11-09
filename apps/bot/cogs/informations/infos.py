@@ -361,7 +361,7 @@ class InfoCommand(cog.Cog):
 
     @cog.slash_command(
         name="invite",
-        description=cog.Localised("Invite me!", key="invite_desc"),
+        description=cog.Localised("Invite me!", key="info.invite.slash.description"),
     )
     async def invite(self, inter: cog.ApplicationCommandInteraction):
         await inter.response.defer(ephemeral=True)
@@ -384,13 +384,11 @@ class InfoCommand(cog.Cog):
             components=[
                 cog.ui.Button(
                     label=add_label,
-                    emoji=self.bot.custom_emojis.icon_user_add,
                     style=cog.ButtonStyle.link,
                     url=url,
                 ),
                 cog.ui.Button(
                     label=self.bot.translate(inter, "info.invite.button.dev_server"),
-                    emoji=self.bot.custom_emojis.icon_help,
                     style=cog.ButtonStyle.link,
                     url=config.support_invite_url,
                 ),
