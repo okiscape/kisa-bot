@@ -3,6 +3,16 @@
         "yes": "Yes",
         "bot": "Bot",
         "no": "No",
+        "": "",
+        "time": { // in short for interlanguage compat
+            "years": "yo.",
+            "months": "mnth.",
+            "week": "week.",
+            "days": "day.",
+            "hours": "hr.",
+            "minutes": "min."/ser,
+            "seconds": "sec."
+        },
         "device": {
             "web": "Web",
             "desktop": "Desktop",

@@ -22,31 +22,34 @@
             "timestamps": "\"Created at\" timestamps"
         },
         "server": {
-            "title": "About {server_name}",
-            "field": {
-                "owner": "{emoji} Owner",
-                "created": "{emoji} Created",
-                "id": "{emoji} Server ID",
-                "channels": "{emoji} Channels",
-                "channels_value": "Text: *{text}*\nVoice: *{voice}*\nForums: *{forum}*\nCategories: *{categories}*",
-                "emojis": "{emoji} Emojis: {count}",
-                "roles": "{emoji} Roles: {count}",
-                "roles_value": "Click the button below to see all role mentions",
-                "members": "{emoji} Members",
-                "members_value": "*{count} members*\n*{boosts} boosts*",
-                "verification": "{emoji} Verification level"
+            "title": "{server_name}",
+            "slash.description": "Server Information",
+            "response.description": "
+                \\> server ID: `{server_id}`
+                \\> owner: <@{owner_id}> (`{owner_id}`)
+            ",
+            "response.fields": {
+                "channels": {
+                    "name": "\\>\\> channels",
+                    "value": "
+                        \\> text: `{text_count}`
+                        \\> voice: `{voice_count}`
+                        \\> forum: `{forum_count}`
+                        \\> categories: `{categories_count}`
+                    "
+                },
+                "afk": {
+                    "name": "\\>\\> afk",
+                    "value": "
+                        \\> channel: <#{afk_channel_id} (`{afk_channel_id}`)>
+                        \\> timeout: `{afk_timeout}`
+                    "
+                }
             },
             "button": {
                 "roles": "View server roles",
                 "categories": "View server categories"
             },
-            "roles": {
-                "title": "Roles of {server_name}"
-            },
-            "categories": {
-                "title": "Channels of {server_name}",
-                "field": "ID: {id}\nChannels: {count}\nNSFW: {nsfw}"
-            }
         },
         "ping": {
             "response": ":ping_pong: Pong!\nLatency {ping}ms!"

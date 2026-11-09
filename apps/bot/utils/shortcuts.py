@@ -1,9 +1,35 @@
 import datetime
-from typing import Any
+from typing import Any, Callable
 
 import disnake
 
 from utils import config, emojis
+
+TIME_UNITS: tuple[tuple[str, int], ...] = (
+    ("years", 365 * 24 * 60 * 60),
+    ("months", 30 * 24 * 60 * 60),
+    ("week", 7 * 24 * 60 * 60),
+    ("days", 24 * 60 * 60),
+    ("hours", 60 * 60),
+    ("minutes", 60),
+    ("seconds", 1),
+)
+
+
+def format_duration(seconds: int, translate: Callable[[str], str]) -> str:
+    """format seconds into a localized human-readable duration"""
+    seconds = max(0, int(seconds))
+    parts: list[str] = []
+
+    for key, unit_seconds in TIME_UNITS:
+        amount, seconds = divmod(seconds, unit_seconds)
+        if amount:
+            parts.append(f"{amount} {translate(f'common.time.{key}')}")
+
+    if not parts:
+        parts.append(f"0 {translate('common.time.seconds')}")
+
+    return " ".join(parts)
 
 
 def now_datetime():

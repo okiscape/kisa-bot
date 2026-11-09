@@ -130,102 +130,130 @@ class InfoCommand(cog.Cog):
 
     @cog.slash_command(
         name="server",
-        description=cog.Localised("Server information", key="server_desc"),
+        description=cog.Localised("Server information", key="info.server.slash.description"),
         contexts=cog.InteractionContextTypes(guild=True),
     )
     async def server(self, inter: cog.ApplicationCommandInteraction):
         await inter.response.defer()
-        g = inter.guild
-        crt = int(g.created_at.timestamp() + 10800)
-        owner = g.owner
-        guild = cog.Embed(
-            title=self.bot.translate(inter, "info.server.title", server_name=g.name),
+        guild = inter.guild
+
+        afk_timeout_formatted = self.bot.shortcuts.format_duration(
+            guild.afk_timeout,
+            lambda key: self.bot.translate(inter, key),
         )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.owner",
-                emoji=self.bot.custom_emojis.icon_user_add,
+
+        embed = cog.Embed(
+            title=self.bot.translate(inter, "info.server.title", server_name=guild.name),
+            description=self.bot.translate(inter, 
+                "info.server.response.description",
+                server_id=guild.id,
+                owner_id=guild.owner.id
             ),
-            value=owner.mention if owner else "\u2014",
+            fields=[
+                cog.EmbedField(
+                    name=self.bot.translate(inter, 
+                        "info.server.response.fields.channels.name"),
+                    value=self.bot.translate(inter, 
+                        "info.server.response.fields.channels.value",
+                        text_count=len(guild.text_channels),
+                        voice_count=len(guild.voice_channels),
+                        forum_count=len(guild.forum_channels),
+                        categories_count=len(guild.categories),
+                    ),
+                ),
+                cog.EmbedField(
+                    name=self.bot.translate(inter,
+                        "info.server.response.fields.afk.name"),
+                    value=self.bot.translate(inter,
+                        "info.server.response.fields.afk.value",
+                        afk_channel_id=guild.afk_channel.id,
+                        afk_timeout=afk_timeout_formatted)
+                ) if guild.afk_timeout and guild.afk_channel else None
+            ],
+            image=guild.banner,
+            thumbnail=guild.icon
         )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.created",
-                emoji=self.bot.custom_emojis.icon_clock,
-            ),
-            value=f"<t:{crt}:R>",
-        )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.id",
-                emoji=self.bot.custom_emojis.icon_paperclip,
-            ),
-            value=f"*{g.id}*",
-        )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.channels",
-                emoji=self.bot.custom_emojis.icon_terminal,
-            ),
-            value=self.bot.translate(
-                inter,
-                "info.server.field.channels_value",
-                text=len(g.text_channels),
-                voice=len(g.voice_channels),
-                forum=len(g.forum_channels),
-                categories=len(g.categories),
-            ),
-        )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.emojis",
-                emoji=random.choice(self.bot.custom_emojis.thinkings),
-                count=len(g.emojis),
-            ),
-            value=f"*{len(g.emojis)}*",
-        )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.roles",
-                emoji=self.bot.custom_emojis.icon_layers,
-                count=len(g.roles),
-            ),
-            value=self.bot.translate(inter, "info.server.field.roles_value"),
-        )
-        boosts = int(g.premium_subscription_count or 0)
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.members",
-                emoji=self.bot.custom_emojis.icon_user,
-            ),
-            value=self.bot.translate(
-                inter,
-                "info.server.field.members_value",
-                count=len(g.members),
-                boosts=boosts,
-            ),
-        )
-        guild.add_field(
-            name=self.bot.translate(
-                inter,
-                "info.server.field.verification",
-                emoji=self.bot.custom_emojis.icon_layers,
-            ),
-            value=f"*{int(g.verification_level.value)}*",
-        )
-        if g.icon:
-            guild.set_thumbnail(url=g.icon.url)
-        if g.banner:
-            guild.set_image(url=g.banner.url)
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.owner",
+        #         emoji=self.bot.custom_emojis.icon_user_add,
+        #     ),
+        #     value=owner.mention if owner else "\u2014",
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.created",
+        #         emoji=self.bot.custom_emojis.icon_clock,
+        #     ),
+        #     value=f"<t:{crt}:R>",
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.id",
+        #         emoji=self.bot.custom_emojis.icon_paperclip,
+        #     ),
+        #     value=f"*{g.id}*",
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.channels",
+        #         emoji=self.bot.custom_emojis.icon_terminal,
+        #     ),
+        #     value=self.bot.translate(
+        #         inter,
+        #         "info.server.field.channels_value",
+        #         text=len(g.text_channels),
+        #         voice=len(g.voice_channels),
+        #         forum=len(g.forum_channels),
+        #         categories=len(g.categories),
+        #     ),
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.emojis",
+        #         emoji=random.choice(self.bot.custom_emojis.thinkings),
+        #         count=len(g.emojis),
+        #     ),
+        #     value=f"*{len(g.emojis)}*",
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.roles",
+        #         emoji=self.bot.custom_emojis.icon_layers,
+        #         count=len(g.roles),
+        #     ),
+        #     value=self.bot.translate(inter, "info.server.field.roles_value"),
+        # )
+        # boosts = int(g.premium_subscription_count or 0)
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.members",
+        #         emoji=self.bot.custom_emojis.icon_user,
+        #     ),
+        #     value=self.bot.translate(
+        #         inter,
+        #         "info.server.field.members_value",
+        #         count=len(g.members),
+        #         boosts=boosts,
+        #     ),
+        # )
+        # guild.add_field(
+        #     name=self.bot.translate(
+        #         inter,
+        #         "info.server.field.verification",
+        #         emoji=self.bot.custom_emojis.icon_layers,
+        #     ),
+        #     value=f"*{int(g.verification_level.value)}*",
+        # )
         await inter.edit_original_response(
-            embed=guild,
+            embed=embed,
             components=[
                 cog.ui.Button(
                     label=self.bot.translate(inter, "info.server.button.roles"),
