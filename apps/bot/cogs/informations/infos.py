@@ -160,6 +160,7 @@ class InfoCommand(cog.Cog):
                         forum_count=len(guild.forum_channels),
                         categories_count=len(guild.categories),
                     ),
+                    inline=True
                 ),
                 cog.EmbedField(
                     name=self.bot.translate(inter,
@@ -167,8 +168,9 @@ class InfoCommand(cog.Cog):
                     value=self.bot.translate(inter,
                         "info.server.response.fields.afk.value",
                         afk_channel_id=guild.afk_channel.id,
-                        afk_timeout=afk_timeout_formatted)
-                ) if guild.afk_timeout and guild.afk_channel else None
+                        afk_timeout=afk_timeout_formatted),
+                    inline=True
+                ) if guild.afk_timeout and guild.afk_channel else None,
             ],
             image=guild.banner,
             thumbnail=guild.icon

@@ -41,7 +41,8 @@
                 "afk": {
                     "name": "\\>\\> afk",
                     "value": "
-                        \\> channel: <#{afk_channel_id} (`{afk_channel_id}`)>
+                        \\> channel: <#{afk_channel_id}> 
+                        ^ `{afk_channel_id}`
                         \\> timeout: `{afk_timeout}`
                     "
                 }

@@ -246,7 +246,7 @@ class User(cog.Cog):
                     if not custom_color
                     else custom_color,
                     title=cog.sh.replace_placeholders(
-                        f"{self.bot.custom_emojis.spotify_logo} {{spotify.title}}",
+                        f"{{spotify.title}}",
                         spotify_pl,
                     ),
                     url=activity.track_url,
