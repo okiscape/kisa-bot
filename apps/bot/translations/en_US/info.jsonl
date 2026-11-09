@@ -3,13 +3,15 @@
         "avatar": {
             "title": "Avatar link",
             "usercommand.name": "Get avatar",
-            "footer": "Requested by {requester.display_name}"
+            "footer": "Requested by {user_display_name}",
+            "slash.description": "Get user avatar",
+            "slash.option.member.description": "Member whose avatar to get"
         },
         "banner": {
             "usercommand.name": "Get banner",
             "title": "Banner of {name}",
             "error": {
-                "no_banner": "{target.mention} doesn't have a banner",
+                "no_banner": "{user_mention} doesn't have a banner",
                 "fetch_failed": "Error! {user_mention} probably doesn't have a banner!"
             }
         },

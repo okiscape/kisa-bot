@@ -10,62 +10,6 @@ class InfoCommand(cog.Cog):
         self.bot = bot
 
     @cog.slash_command(
-        name="avatar",
-        description=cog.Localised("Request a user avatar", key="avatar_desc"),
-    )
-    async def avatar(
-        self,
-        inter: cog.ApplicationCommandInteraction,
-        member: cog.Member = cog.Param(description="Чей аватар", default=None),
-    ):
-        await inter.response.defer()
-        member = member or inter.author
-        e = cog.Embed(
-            title=self.bot.translate(inter, "info.avatar.title"),
-            url=str(member.avatar.url) if member.avatar else None,
-            color=0x333333,
-            timestamp=datetime.datetime.now(),
-        )
-        e.set_author(
-            name=f"{member.global_name} | {member.name}",
-            icon_url=member.display_avatar.url,
-        )
-        if member.display_avatar != member.avatar:
-            e.set_thumbnail(url=member.avatar.url)
-        e.set_image(url=member.display_avatar.url)
-        e.set_footer(
-            text=self.bot.translate(inter, "info.avatar.footer"),
-            icon_url=inter.author.display_avatar.url,
-        )
-        await inter.edit_original_response(
-            embed=e,
-            view=self.bot.shortcuts.MessageDeleteView(),
-        )
-
-    @cog.user_command(name=cog.Localised(key="info.banner.usercommand.name"))
-    async def banner(self, inter: cog.ApplicationCommandInteraction, user: cog.Member):
-        await inter.response.defer(ephemeral=True)
-        try:
-            users: cog.User = await self.bot.fetch_user(user.id)
-            if not users.banner:
-                await inter.edit_original_response(
-                    self.bot.translate(inter, "info.banner.error.no_banner")
-                )
-                return
-            embed = cog.Embed(
-                title=self.bot.translate(
-                    inter, "info.banner.title", name=users.display_name
-                ),
-                color=0xEB459E,
-            ).set_image(url=users.banner.url)
-            await inter.edit_original_response(embed=embed)
-
-        except Exception:
-            await inter.edit_original_response(
-                self.bot.translate(inter, "info.banner.error.fetch_failed")
-            )
-
-    @cog.slash_command(
         name="channel",
         description=cog.Localised("Channel information", key="channel_get_name"),
     )
@@ -394,35 +338,6 @@ class InfoCommand(cog.Cog):
                 ),
             ],
         )
-
-    @cog.user_command(
-        name=cog.Localised("Get user avatar", key="info.avatar.usercommand.name")
-    )
-    async def user_avatar_cmd(
-        self,
-        inter: cog.ApplicationCommandInteraction,
-        member: cog.User,
-    ):
-        await inter.response.defer(ephemeral=True)
-        e = cog.Embed(
-            title=self.bot.translate(inter, "info.avatar.title"),
-            url=str(member.avatar.url) if member.avatar else None,
-            color=0x333333,
-            timestamp=datetime.datetime.now(),
-            author=cog.EmbedAuthor(
-                name=f"{member.global_name} | {member.name}",
-                icon_url=member.display_avatar.url,
-            ),
-            image=member.display_avatar.url,
-            footer=cog.EmbedFooter(
-                text=self.bot.translate(inter, "info.avatar.footer"),
-                icon_url=inter.author.display_avatar.url,
-            ),
-        )
-        if member.display_avatar != member.avatar:
-            e.set_thumbnail(url=member.avatar.url)
-
-        await inter.edit_original_response(f"{inter.author.mention}", embed=e)
 
     @cog.listener()
     async def on_button_click(self, inter: cog.MessageInteraction):
