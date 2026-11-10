@@ -319,6 +319,32 @@ class User(cog.Cog):
 				await inter.response.defer(ephemeral=True)
 				await self._user_info(inter, member)
 
+
+		async def _avatar_display(self,
+				inter: cog.ApplicationCommandInteraction, 
+				member: cog.Member
+			):
+
+			e = cog.Embed(
+				title=self.bot.translate(inter, "info.avatar.title"),
+				url=str(member.avatar.url) if member.avatar else None,
+				timestamp=cog.datetime.now(),
+				author=cog.EmbedAuthor(
+					name=f"{member.global_name} | {member.name}",
+					icon_url=member.display_avatar.url,
+				),
+				thumbnail=member.avatar.url if member.display_avatar != member.avatar else None,
+				image=member.display_avatar.url,
+				footer=cog.EmbedFooter(
+					text=self.bot.translate(inter, "info.avatar.footer", user_display_name=inter.author.display_name),
+					icon_url=inter.author.display_avatar.url,
+				)
+			)
+
+			await inter.edit_original_response(
+				embed=e
+			)
+
 		@user_group.sub_command(
 				name="avatar",
 				description=cog.Localised("Request a user avatar", key="info.avatar.slash.description"),
@@ -332,27 +358,20 @@ class User(cog.Cog):
 				),
 		):
 				await inter.response.defer()
-				e = cog.Embed(
-						title=self.bot.translate(inter, "info.avatar.title"),
-						url=str(member.avatar.url) if member.avatar else None,
-						color=0x333333,
-						timestamp=cog.datetime.now(),
-				)
-				e.set_author(
-						name=f"{member.global_name} | {member.name}",
-						icon_url=member.display_avatar.url,
-				)
-				if member.display_avatar != member.avatar:
-						e.set_thumbnail(url=member.avatar.url)
-				e.set_image(url=member.display_avatar.url)
-				e.set_footer(
-						text=self.bot.translate(inter, "info.avatar.footer", user_display_name=inter.author.display_name),
-						icon_url=inter.author.display_avatar.url,
-				)
-				await inter.edit_original_response(
-						embed=e,
-						view=self.bot.shortcuts.MessageDeleteView(),
-				)
+				await self._avatar_display(inter, member)
+
+		@cog.user_command(name=cog.Localised(key="info.avatar.usercommand.name"))
+		async def avatar_usercommand(
+				self,
+				inter: cog.ApplicationCommandInteraction,
+				member: cog.Member = cog.Param(
+					description=cog.Localized(key="info.avatar.slash.option.member.description"),
+					default=lambda i: i.author
+				),
+		):
+				await inter.response.defer(ephemeral=True)
+				await self._avatar_display(inter, member)
+				
 
 		@cog.user_command(name=cog.Localised(key="info.banner.usercommand.name"))
 		async def banner(self, inter: cog.ApplicationCommandInteraction, user: cog.Member):
@@ -391,36 +410,6 @@ class User(cog.Cog):
 						await inter.edit_original_response(
 								self.bot.translate(inter, "info.banner.error.fetch_failed", user_mention=user.mention)
 						)
-
-		@cog.user_command(
-				name=cog.Localised("Get user avatar", key="info.avatar.usercommand.name")
-		)
-		async def user_avatar_cmd(
-				self,
-				inter: cog.ApplicationCommandInteraction,
-				member: cog.User,
-		):
-				await inter.response.defer(ephemeral=True)
-				e = cog.Embed(
-						title=self.bot.translate(inter, "info.avatar.title"),
-						url=str(member.avatar.url) if member.avatar else None,
-						color=0x333333,
-						timestamp=cog.datetime.now(),
-						author=cog.EmbedAuthor(
-								name=f"{member.global_name} | {member.name}",
-								icon_url=member.display_avatar.url,
-						),
-						image=member.display_avatar.url,
-						footer=cog.EmbedFooter(
-								text=self.bot.translate(inter, "info.avatar.footer"),
-								icon_url=inter.author.display_avatar.url,
-						),
-				)
-				if member.display_avatar != member.avatar:
-						e.set_thumbnail(url=member.avatar.url)
-
-				await inter.edit_original_response(f"{inter.author.mention}", embed=e)
-
 
 def setup(bot):
 		bot.add_cog(User(bot))
