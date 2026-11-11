@@ -17,6 +17,7 @@ env:
 
 jobs:
     build-bot:
+        if: github.ref_name == 'main'
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read
@@ -34,6 +35,7 @@ jobs:
             push: true
 
     build-backend:
+        if: github.ref_name == 'main'
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read
@@ -55,6 +57,7 @@ jobs:
             push: true
 
     build-frontend:
+        if: github.ref_name == 'main'
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read

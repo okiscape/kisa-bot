@@ -29,6 +29,7 @@ jobs:
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read
+            packages: read
         with:
             service_name: bot
             filter_paths: |
@@ -45,6 +46,7 @@ jobs:
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read
+            packages: read
         with:
             service_name: backend
             filter_paths: |
@@ -65,6 +67,7 @@ jobs:
         uses: ./.github/workflows/build.service.yml
         permissions:
             contents: read
+            packages: read
         with:
             service_name: frontend
             filter_paths: |
