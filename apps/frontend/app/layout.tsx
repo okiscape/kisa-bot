@@ -1,23 +1,19 @@
-import "./page.css";
+import "./globals.css";
 import { ViewTransitions } from "next-view-transitions";
-import Header from "@/components/header";
 
 export default function RootLayout({
-    children,
+	children,
 }: Readonly<{
-    children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-    return (
-        <ViewTransitions>
-            <html lang="en" className="h-full antialiased">
-                <head>
-                    <title>Kisa</title>
-                </head>
-                <body>
-                    <Header />
-                    {children}
-                </body>
-            </html>
-        </ViewTransitions>
-    );
+	return (
+		<ViewTransitions>
+			<html lang="en" className="h-full antialiased">
+				<head>
+					<title>Kisa</title>
+				</head>
+				<body>{children}</body>
+			</html>
+		</ViewTransitions>
+	);
 }

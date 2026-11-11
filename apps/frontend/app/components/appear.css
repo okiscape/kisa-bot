@@ -1,0 +1,73 @@
+.appear {
+	opacity: 0;
+	will-change: transform, opacity;
+	transition:
+		opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+		transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+
+	&.fade-up {
+		transform: translateY(36px);
+	}
+
+	&.reveal {
+		transform: translateY(24px) scale(0.985);
+	}
+
+	&.visible {
+		opacity: 1;
+		transform: none;
+
+		.appear-bar,
+		.appear-meter,
+		.appear-number {
+			animation: appear-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+		}
+
+		.appear-number {
+			animation-name: appear-number;
+		}
+
+		.appear-meter {
+			animation-name: appear-meter;
+		}
+	}
+}
+
+.appear-meter {
+	transform-origin: left center;
+}
+
+@keyframes appear-grow {
+	from {
+		transform: scaleY(0);
+		transform-origin: bottom;
+		opacity: 0.2;
+	}
+	to {
+		transform: scaleY(1);
+		transform-origin: bottom;
+		opacity: 1;
+	}
+}
+
+@keyframes appear-number {
+	from {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes appear-meter {
+	from {
+		transform: scaleX(0);
+		opacity: 0.35;
+	}
+	to {
+		transform: scaleX(1);
+		opacity: 1;
+	}
+}

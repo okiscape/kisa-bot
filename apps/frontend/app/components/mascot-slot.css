@@ -1,0 +1,21 @@
+.mascotslot {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	background: var(--color-surface);
+	color: var(--color-muted);
+	font-family: var(--font-display);
+	overflow: hidden;
+
+	> span {
+		font-size: 1.75rem;
+		white-space: nowrap;
+	}
+}
+
+@media (max-width: 900px) {
+	.mascotslot > span {
+		font-size: 1.25rem;
+	}
+}

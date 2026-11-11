@@ -1,0 +1,40 @@
+.deco {
+	position: relative;
+
+	> .inner {
+		position: relative;
+		z-index: 1;
+		border: 1px solid var(--color-border);
+		border-radius: 36px;
+		overflow: hidden;
+		background: transparent;
+	}
+
+	> .pill {
+		position: absolute;
+		z-index: 2;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 44px;
+		padding: 0 22px;
+		border-radius: 22px;
+		font-family: var(--font-display);
+		font-size: 1rem;
+		white-space: nowrap;
+		pointer-events: none;
+
+		&.accent {
+			background: var(--color-accent3);
+			color: #000;
+			font-weight: 700;
+		}
+
+		&.soft,
+		&.neutral {
+			background: transparent;
+			border: 1px solid var(--color-border);
+			color: var(--color-muted);
+		}
+	}
+}
