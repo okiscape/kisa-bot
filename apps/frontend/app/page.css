@@ -28,8 +28,8 @@
 				font-style: italic;
 				font-weight: 700;
 				font-size: 4rem;
-				line-height: 0.98;
-				letter-spacing: -0.05em;
+				line-height: 0.95;
+				letter-spacing: -0.02em;
 			}
 
 			> .lead {
@@ -991,4 +991,3 @@
 		}
 	}
 }
-

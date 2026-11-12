@@ -78,7 +78,7 @@ export default function Landing() {
 						Discord bot.
 					</h1>
 					<p className="lead">
-						Social rating, leveling, games and more, all managed from one calm dashboard.
+						Social rating, third-party services integrations and get the most information you can.
 					</p>
 					<div className="actions">
 						<Button href="/login" variant="warm" size="lg">
@@ -213,7 +213,7 @@ export default function Landing() {
 						<span className="num">04</span>
 						<h2>Leveling</h2>
 						<p>
-							Give XP for chatting, post level up messages and hand out role rewards. A weekly
+							Gain XP for chatting. A weekly
 							leaderboard keeps things friendly.
 						</p>
 					</Appear>
@@ -395,8 +395,8 @@ export default function Landing() {
 			<section className="cta">
 				<Appear className="band">
 					<h2>Meet kisa.</h2>
-					<p>Add kisa to your server and finish the setup in the dashboard.</p>
-					<Button href="/login" variant="warm" size="lg">
+					<p>Add kisa to your server and look beyond your abilities.</p>
+					<Button href="/login" size="lg">
 						Add to Discord
 					</Button>
 				</Appear>
