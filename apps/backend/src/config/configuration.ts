@@ -11,6 +11,15 @@ export default () => {
       secret: sessionSecret,
       cookieName: process.env.SESSION_COOKIE_NAME || "kisa_session",
       ttlDays: parseInt(process.env.SESSION_TTL_DAYS || "7", 10),
+      // Prefer explicit flag; otherwise Secure only for non-localhost production.
+      secure:
+        process.env.COOKIE_SECURE === "true"
+          ? true
+          : process.env.COOKIE_SECURE === "false"
+            ? false
+            : (process.env.NODE_ENV || "development") === "production" &&
+              !(process.env.FRONTEND_URL || "").includes("localhost") &&
+              !(process.env.FRONTEND_URL || "").includes("127.0.0.1"),
     },
     discord: {
       clientId: process.env.DISCORD_CLIENT_ID,

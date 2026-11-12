@@ -5,6 +5,8 @@ declare global {
     interface Request {
       discordUser?: DiscordUser;
       requestId?: string;
+      sessionId?: string;
+      accessToken?: string;
     }
   }
 }

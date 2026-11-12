@@ -14,12 +14,13 @@ import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
 import { BigIntInterceptor } from "./common/interceptors/bigint.interceptor";
 import { ResponseEnvelopeInterceptor } from "./common/interceptors/response.interceptor";
+import { CsrfGuard } from "./auth/guards/csrf.guard";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ["../../.env", ".env"],
+      envFilePath: [".env"],
       load: [configuration],
       validate: validateEnv,
     }),
@@ -53,6 +54,10 @@ import { ResponseEnvelopeInterceptor } from "./common/interceptors/response.inte
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
     },
   ],
 })
