@@ -73,6 +73,23 @@ model Serververse {
   @@map("serververse")
 }
 
+/// Bot-owned singleton metrics snapshot. Backend is read-only.
+model BotMetrics {
+  id             Int      @id
+  guildCount     Int      @default(0) @map("guild_count")
+  userCount      Int      @default(0) @map("user_count")
+  commandCount   Int      @default(0) @map("command_count")
+  channelCount   Int      @default(0) @map("channel_count")
+  shardCount     Int      @default(0) @map("shard_count")
+  latencyMs      Int      @default(0) @map("latency_ms")
+  uptimeSeconds  Int      @default(0) @map("uptime_seconds")
+  version        String   @default("") @db.Text
+  online         Boolean  @default(false)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("bot_metrics")
+}
+
 /// Backend-owned opaque web sessions. Discord tokens are encrypted at rest.
 model WebSession {
   id                     String    @id @db.Text

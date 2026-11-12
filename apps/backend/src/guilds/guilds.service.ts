@@ -1,5 +1,66 @@
-import { Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { CacheService } from "../cache/cache.service";
+import { DiscordApiClient } from "../discord/discord-api.client";
+import { AuthService } from "../auth/auth.service";
+import { guildIconUrl } from "../discord/discord-cdn.util";
+import {
+  DiscordApiChannel,
+  DiscordApiGuild,
+  DiscordApiRole,
+} from "../discord/discord.types";
+import { ErrorCodes } from "../common/types/error-codes";
+import { UpdateGuildSettingsDto } from "./dto/update-guild-settings.dto";
+import {
+  BAD_WORDS_ACTIONS,
+  GuildSettingsDto,
+  mergeGuildSettings,
+  SUPPORTED_LANGUAGES,
+  defaultGuildSettings,
+} from "./guild-settings.defaults";
+
+const PERMISSIONS = {
+  ADMINISTRATOR: 0x8n,
+  MANAGE_GUILD: 0x20n,
+} as const;
+
+const CHANNEL_FIELDS = [
+  "notifyChannel",
+  "joinChannel",
+  "leaveChannel",
+  "postChannel",
+  "logChannel",
+  "privateCrChannel",
+  "ticketCategory",
+  "privateCategory",
+] as const;
+
+const ROLE_FIELDS = [
+  "muteRole",
+  "autoRole",
+  "verifiedRole",
+] as const;
+
+export interface GuildDiscoveryItem {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  owner: boolean;
+  permissions: string;
+  isAdmin: boolean;
+  isManageable: boolean;
+  hasBot: boolean;
+  canInviteBot: boolean;
+  botInviteUrl: string | null;
+}
+
+export interface GuildDetail extends GuildDiscoveryItem {
+  icon: string | null;
+}
 
 const bigIntFields = [
   "notifyChannel",
@@ -13,38 +74,281 @@ const bigIntFields = [
   "ticketCategory",
   "privateCrChannel",
   "privateCategory",
-];
+] as const;
 
 @Injectable()
 export class GuildsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+    private readonly discord: DiscordApiClient,
+    private readonly auth: AuthService,
+  ) {}
 
-  async getSettings(guildId: string) {
-    return this.prisma.serverSettings.findUnique({
-      where: { guildId: BigInt(guildId) },
+  async listGuilds(
+    accessToken: string,
+    userId: string,
+    filter: "all" | "manageable" = "manageable",
+  ): Promise<GuildDiscoveryItem[]> {
+    const [userGuilds, botGuildIds] = await Promise.all([
+      this.getCachedUserGuilds(accessToken, userId),
+      this.getCachedBotGuildIds(),
+    ]);
+    const botSet = new Set(botGuildIds);
+
+    const mapped = userGuilds.map((g) => this.toDiscoveryItem(g, botSet));
+    const filtered =
+      filter === "all" ? mapped : mapped.filter((g) => g.isManageable);
+
+    return filtered.sort((a, b) => {
+      if (a.hasBot !== b.hasBot) return a.hasBot ? -1 : 1;
+      if (a.canInviteBot !== b.canInviteBot) return a.canInviteBot ? -1 : 1;
+      return a.name.localeCompare(b.name);
     });
   }
 
-  async updateSettings(guildId: string, data: Record<string, unknown>) {
+  async getGuildDetail(
+    accessToken: string,
+    userId: string,
+    guildId: string,
+  ): Promise<GuildDetail | null> {
+    const [userGuilds, botGuildIds] = await Promise.all([
+      this.getCachedUserGuilds(accessToken, userId),
+      this.getCachedBotGuildIds(),
+    ]);
+    const guild = userGuilds.find((g) => g.id === guildId);
+    if (!guild || !this.auth.hasRequiredPermission(guild)) {
+      return null;
+    }
+
+    const botSet = new Set(botGuildIds);
+    const item = this.toDiscoveryItem(guild, botSet);
+
+    if (item.hasBot) {
+      try {
+        const meta = await this.getCachedGuildMeta(guildId);
+        return {
+          ...item,
+          name: meta.name,
+          icon: meta.icon,
+          iconUrl: guildIconUrl(meta.id, meta.icon),
+        };
+      } catch {
+        return { ...item, icon: guild.icon };
+      }
+    }
+
+    return { ...item, icon: guild.icon };
+  }
+
+  async getRoles(guildId: string): Promise<DiscordApiRole[]> {
+    const { value } = await this.cache.getOrSet(
+      `discord:guild:${guildId}:roles`,
+      () => this.discord.getGuildRoles(guildId),
+      { ttlSeconds: 300, staleSeconds: 3600, staleIfError: true },
+    );
+    return value;
+  }
+
+  async getChannels(guildId: string): Promise<DiscordApiChannel[]> {
+    const { value } = await this.cache.getOrSet(
+      `discord:guild:${guildId}:channels`,
+      () => this.discord.getGuildChannels(guildId),
+      { ttlSeconds: 300, staleSeconds: 3600, staleIfError: true },
+    );
+    return value;
+  }
+
+  async isBotInstalled(guildId: string): Promise<boolean> {
+    const ids = await this.getCachedBotGuildIds();
+    return ids.includes(guildId);
+  }
+
+  async getSettings(guildId: string): Promise<GuildSettingsDto> {
+    await this.requireBotInstalled(guildId);
+    const row = await this.prisma.serverSettings.findUnique({
+      where: { guildId: BigInt(guildId) },
+    });
+    return mergeGuildSettings(guildId, row);
+  }
+
+  async updateSettings(
+    guildId: string,
+    dto: UpdateGuildSettingsDto,
+  ): Promise<GuildSettingsDto> {
+    await this.requireBotInstalled(guildId);
+    await this.validateChannelAndRoleIds(guildId, dto);
+
     const processed: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-      if (bigIntFields.includes(key) && value !== null) {
+    for (const [key, value] of Object.entries(dto)) {
+      if (value === undefined) continue;
+      if (
+        (bigIntFields as readonly string[]).includes(key) &&
+        value !== null
+      ) {
         processed[key] = BigInt(value as string);
       } else {
         processed[key] = value;
       }
     }
 
-    return this.prisma.serverSettings.upsert({
+    await this.prisma.serverSettings.upsert({
       where: { guildId: BigInt(guildId) },
       create: { guildId: BigInt(guildId), ...processed },
       update: processed,
     });
+
+    return this.getSettings(guildId);
   }
 
-  async deleteSettings(guildId: string) {
-    return this.prisma.serverSettings.delete({
-      where: { guildId: BigInt(guildId) },
-    });
+  async deleteSettings(guildId: string): Promise<GuildSettingsDto> {
+    await this.requireBotInstalled(guildId);
+    try {
+      await this.prisma.serverSettings.delete({
+        where: { guildId: BigInt(guildId) },
+      });
+    } catch {
+      // already defaults
+    }
+    return defaultGuildSettings(guildId);
+  }
+
+  async getSettingsOptions(guildId: string) {
+    await this.requireBotInstalled(guildId);
+    const [channels, roles] = await Promise.all([
+      this.getChannels(guildId),
+      this.getRoles(guildId),
+    ]);
+    return {
+      channels: channels.map((c) => ({
+        id: c.id,
+        type: c.type,
+        name: c.name,
+        position: c.position,
+        parentId: c.parent_id,
+      })),
+      roles: roles.map((r) => ({
+        id: r.id,
+        name: r.name,
+        color: r.color,
+        position: r.position,
+      })),
+      languages: [...SUPPORTED_LANGUAGES],
+      badWordsActions: [...BAD_WORDS_ACTIONS],
+    };
+  }
+
+  private async requireBotInstalled(guildId: string): Promise<void> {
+    const installed = await this.isBotInstalled(guildId);
+    if (!installed) {
+      throw new ConflictException({
+        code: ErrorCodes.BOT_NOT_INSTALLED,
+        message: "Bot is not installed in this guild",
+        details: { botInviteUrl: this.discord.getBotInviteUrl(guildId) },
+      });
+    }
+  }
+
+  private async validateChannelAndRoleIds(
+    guildId: string,
+    dto: UpdateGuildSettingsDto,
+  ): Promise<void> {
+    const channelIds = CHANNEL_FIELDS.map((f) => dto[f]).filter(
+      (v): v is string => typeof v === "string",
+    );
+    const roleIds = ROLE_FIELDS.map((f) => dto[f]).filter(
+      (v): v is string => typeof v === "string",
+    );
+
+    if (channelIds.length === 0 && roleIds.length === 0) return;
+
+    const [channels, roles] = await Promise.all([
+      channelIds.length ? this.getChannels(guildId) : Promise.resolve([]),
+      roleIds.length ? this.getRoles(guildId) : Promise.resolve([]),
+    ]);
+    const channelSet = new Set(channels.map((c) => c.id));
+    const roleSet = new Set(roles.map((r) => r.id));
+
+    for (const field of CHANNEL_FIELDS) {
+      const value = dto[field];
+      if (typeof value === "string" && !channelSet.has(value)) {
+        throw new BadRequestException({
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: `${field} is not a channel in this guild`,
+          details: { field, value },
+        });
+      }
+    }
+    for (const field of ROLE_FIELDS) {
+      const value = dto[field];
+      if (typeof value === "string" && !roleSet.has(value)) {
+        throw new BadRequestException({
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: `${field} is not a role in this guild`,
+          details: { field, value },
+        });
+      }
+    }
+  }
+
+  private toDiscoveryItem(
+    guild: DiscordApiGuild,
+    botSet: Set<string>,
+  ): GuildDiscoveryItem {
+    const isAdmin = this.isAdmin(guild);
+    const isManageable = this.auth.hasRequiredPermission(guild);
+    const hasBot = botSet.has(guild.id);
+    const canInviteBot = isManageable && !hasBot;
+
+    return {
+      id: guild.id,
+      name: guild.name,
+      iconUrl: guildIconUrl(guild.id, guild.icon),
+      owner: guild.owner,
+      permissions: guild.permissions,
+      isAdmin,
+      isManageable,
+      hasBot,
+      canInviteBot,
+      botInviteUrl: canInviteBot
+        ? this.discord.getBotInviteUrl(guild.id)
+        : null,
+    };
+  }
+
+  private isAdmin(guild: DiscordApiGuild): boolean {
+    if (guild.owner) return true;
+    const bits = BigInt(guild.permissions);
+    return (bits & PERMISSIONS.ADMINISTRATOR) !== 0n;
+  }
+
+  private async getCachedUserGuilds(
+    accessToken: string,
+    userId: string,
+  ): Promise<DiscordApiGuild[]> {
+    const { value } = await this.cache.getOrSet(
+      `discord:user:${userId}:guilds`,
+      () => this.discord.getUserGuilds(accessToken),
+      { ttlSeconds: 60, staleSeconds: 120, staleIfError: true },
+    );
+    return value;
+  }
+
+  private async getCachedBotGuildIds(): Promise<string[]> {
+    const { value } = await this.cache.getOrSet(
+      "discord:bot-guild-ids",
+      () => this.discord.getBotGuildIds(),
+      { ttlSeconds: 60, staleSeconds: 600, staleIfError: true },
+    );
+    return value;
+  }
+
+  private async getCachedGuildMeta(guildId: string) {
+    const { value } = await this.cache.getOrSet(
+      `discord:guild:${guildId}`,
+      () => this.discord.getGuild(guildId),
+      { ttlSeconds: 300, staleSeconds: 3600, staleIfError: true },
+    );
+    return value;
   }
 }

@@ -61,6 +61,20 @@ db_schema = {
         "guild_id1": "BIGINT NOT NULL",
         "channel_id1": "BIGINT NOT NULL",
     },
+    # Singleton snapshot written by the bot; backend reads only.
+    "bot_metrics": {
+        "id": "INTEGER PRIMARY KEY",
+        "guild_count": "INTEGER NOT NULL DEFAULT 0",
+        "user_count": "INTEGER NOT NULL DEFAULT 0",
+        "command_count": "INTEGER NOT NULL DEFAULT 0",
+        "channel_count": "INTEGER NOT NULL DEFAULT 0",
+        "shard_count": "INTEGER NOT NULL DEFAULT 0",
+        "latency_ms": "INTEGER NOT NULL DEFAULT 0",
+        "uptime_seconds": "INTEGER NOT NULL DEFAULT 0",
+        "version": "TEXT NOT NULL DEFAULT ''",
+        "online": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "updated_at": "TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+    },
 }
 # { table: {column-name: column-type} }
 
@@ -911,3 +925,64 @@ class DatabaseManager:
             table="social_rating",
             filters=[Filter("user_id", user_id)],
         )
+
+    async def upsert_bot_metrics(
+        self,
+        *,
+        guild_count: int,
+        user_count: int,
+        command_count: int,
+        channel_count: int,
+        shard_count: int,
+        latency_ms: int,
+        uptime_seconds: int,
+        version: str,
+        online: bool = True,
+    ) -> None:
+        """Upsert the singleton bot_metrics row (id=1). Backend is read-only."""
+        await self.db.execute(
+            """
+            INSERT INTO bot_metrics (
+              id, guild_count, user_count, command_count, channel_count,
+              shard_count, latency_ms, uptime_seconds, version, online, updated_at
+            ) VALUES (
+              1, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              guild_count = EXCLUDED.guild_count,
+              user_count = EXCLUDED.user_count,
+              command_count = EXCLUDED.command_count,
+              channel_count = EXCLUDED.channel_count,
+              shard_count = EXCLUDED.shard_count,
+              latency_ms = EXCLUDED.latency_ms,
+              uptime_seconds = EXCLUDED.uptime_seconds,
+              version = EXCLUDED.version,
+              online = EXCLUDED.online,
+              updated_at = NOW()
+            """,
+            guild_count,
+            user_count,
+            command_count,
+            channel_count,
+            shard_count,
+            latency_ms,
+            uptime_seconds,
+            version,
+            online,
+            no_fetch=True,
+        )
+
+    async def set_bot_metrics_offline(self) -> None:
+        """Best-effort mark bot offline on shutdown."""
+        try:
+            await self.db.execute(
+                """
+                UPDATE bot_metrics
+                SET online = FALSE, updated_at = NOW()
+                WHERE id = 1
+                """,
+                no_fetch=True,
+            )
+        except Exception as exc:
+            logging.warning("bot_metrics offline update failed", str(exc), type="DB")
+

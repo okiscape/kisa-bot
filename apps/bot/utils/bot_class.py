@@ -1,6 +1,8 @@
 import disnake
 from disnake.ext.commands import AutoShardedInteractionBot, Cog
 from utils import bot_logging, config, database, emojis, locales, shortcuts
+from utils.metrics_flusher import MetricsFlusher
+from utils.redis_client import close_redis, get_redis
 
 
 class KisaBot(AutoShardedInteractionBot):
@@ -16,6 +18,7 @@ class KisaBot(AutoShardedInteractionBot):
         self.database = database.DatabaseManager(config.postgres_dsn)
         self.shortcuts = shortcuts
         self.custom_emojis = emojis
+        self.metrics_flusher: MetricsFlusher | None = None
 
         intents = disnake.Intents.all()
 
@@ -45,6 +48,8 @@ class KisaBot(AutoShardedInteractionBot):
 
     async def setup_hook(self):
         await self.database.init_schema()
+        # Warm Redis connection when configured (optional cache/future use).
+        await get_redis()
 
     def run_bot(self):
         self.logging.info(
@@ -90,6 +95,16 @@ class KisaBot(AutoShardedInteractionBot):
                 loaded[command.cog.__module__]["listeners"].append(listener[0])
 
         self.loaded_cogs_formatted = self.dictFormat(loaded)
+
+        if self.metrics_flusher is None:
+            self.metrics_flusher = MetricsFlusher(self)
+        self.metrics_flusher.start()
+
+    async def close(self):
+        if self.metrics_flusher is not None:
+            await self.metrics_flusher.stop()
+        await close_redis()
+        await super().close()
 
     async def on_disconnect(self):
         self.logging.warning("Disconnected", type="gateway")

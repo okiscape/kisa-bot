@@ -24,7 +24,7 @@ export class CacheService implements OnModuleDestroy {
   }
 
   async get<T>(key: string): Promise<T | null> {
-    const entry = await this.store.get<T>(key);
+    const entry = await this.safeGet<T>(key);
     if (!entry) {
       this.stats.misses += 1;
       return null;
@@ -43,16 +43,31 @@ export class CacheService implements OnModuleDestroy {
     ttlSeconds: number,
     staleSeconds = 0,
   ): Promise<void> {
-    const jitteredTtl = this.withJitter(ttlSeconds);
-    await this.store.set(key, value, jitteredTtl, staleSeconds);
+    await this.safeSet(key, value, ttlSeconds, staleSeconds);
   }
 
   async delete(key: string): Promise<void> {
-    await this.store.delete(key);
+    try {
+      await this.store.delete(key);
+    } catch (err) {
+      this.logger.warn(
+        `Cache delete failed for ${key}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   async clear(): Promise<void> {
-    await this.store.clear();
+    try {
+      await this.store.clear();
+    } catch (err) {
+      this.logger.warn(
+        `Cache clear failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   async getOrSet<T>(
@@ -60,7 +75,7 @@ export class CacheService implements OnModuleDestroy {
     factory: () => Promise<T>,
     options: GetOrSetOptions,
   ): Promise<{ value: T; cache: "HIT" | "MISS" | "STALE" }> {
-    const entry = await this.store.get<T>(key);
+    const entry = await this.safeGet<T>(key);
     const now = Date.now();
 
     if (entry && now <= entry.expiresAt) {
@@ -74,7 +89,7 @@ export class CacheService implements OnModuleDestroy {
       void this.singleFlight(key, async () => {
         try {
           const fresh = await factory();
-          await this.set(
+          await this.safeSet(
             key,
             fresh,
             options.ttlSeconds,
@@ -97,7 +112,8 @@ export class CacheService implements OnModuleDestroy {
 
     try {
       const value = await this.singleFlight(key, factory);
-      await this.set(
+      // Never fail the caller because the cache backend is down.
+      await this.safeSet(
         key,
         value,
         options.ttlSeconds,
@@ -110,6 +126,37 @@ export class CacheService implements OnModuleDestroy {
         return { value: entry.value, cache: "STALE" };
       }
       throw err;
+    }
+  }
+
+  private async safeGet<T>(key: string) {
+    try {
+      return await this.store.get<T>(key);
+    } catch (err) {
+      this.logger.warn(
+        `Cache get failed for ${key}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  private async safeSet<T>(
+    key: string,
+    value: T,
+    ttlSeconds: number,
+    staleSeconds = 0,
+  ): Promise<void> {
+    try {
+      const jitteredTtl = this.withJitter(ttlSeconds);
+      await this.store.set(key, value, jitteredTtl, staleSeconds);
+    } catch (err) {
+      this.logger.warn(
+        `Cache set failed for ${key}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
     }
   }
 
@@ -131,7 +178,9 @@ export class CacheService implements OnModuleDestroy {
 
   private withJitter(ttlSeconds: number): number {
     if (ttlSeconds <= 1) return ttlSeconds;
-    const jitter = Math.floor(Math.random() * Math.max(1, Math.floor(ttlSeconds * 0.1)));
+    const jitter = Math.floor(
+      Math.random() * Math.max(1, Math.floor(ttlSeconds * 0.1)),
+    );
     return ttlSeconds + jitter;
   }
 

@@ -52,6 +52,7 @@ export class GuildAdminGuard implements CanActivate {
     const hasAccess = await this.auth.checkUserGuildAccess(
       accessToken,
       guildId,
+      request.discordUser?.id,
     );
     if (!hasAccess) {
       throw new ForbiddenException({

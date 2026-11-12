@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { DiscordUser } from "./discord-user.interface";
 import {
   ActiveSession,
@@ -10,23 +6,14 @@ import {
   SessionService,
 } from "./session.service";
 import { ErrorCodes } from "../common/types/error-codes";
+import {
+  DiscordApiClient,
+  DiscordTokenBundle as ClientTokenBundle,
+} from "../discord/discord-api.client";
+import { DiscordApiGuild } from "../discord/discord.types";
+import { CacheService } from "../cache/cache.service";
 
-interface DiscordTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token?: string;
-  scope: string;
-}
-
-export interface DiscordGuild {
-  id: string;
-  name: string;
-  icon: string | null;
-  owner: boolean;
-  permissions: string;
-  features: string[];
-}
+export type DiscordGuild = DiscordApiGuild;
 
 export interface GuildWithBotStatus {
   id: string;
@@ -52,116 +39,24 @@ const PERMISSIONS = {
 
 @Injectable()
 export class AuthService {
-  private readonly discordApi = "https://discord.com/api/v10";
-  private botGuildsCache: { data: Set<string>; expiresAt: number } | null =
-    null;
-  private readonly BOT_GUILDS_CACHE_TTL = 60_000;
-
   constructor(
-    private readonly config: ConfigService,
+    private readonly discord: DiscordApiClient,
     private readonly sessions: SessionService,
+    private readonly cache: CacheService,
   ) {}
 
-  private async fetchWithRetry(
-    input: string | URL,
-    init?: RequestInit,
-    retries = 2,
-    delayMs = 500,
-  ): Promise<Response> {
-    let lastError: unknown;
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const res = await fetch(input, init);
-        if (res.status === 429) {
-          const retryAfter = Number(res.headers.get("retry-after") || "1");
-          await new Promise((r) => setTimeout(r, retryAfter * 1000));
-          continue;
-        }
-        return res;
-      } catch (err) {
-        lastError = err;
-        if (attempt < retries) {
-          await new Promise((r) => setTimeout(r, delayMs * (attempt + 1)));
-        }
-      }
-    }
-    throw lastError;
+  exchangeCode(code: string): Promise<DiscordTokenBundle> {
+    return this.discord.exchangeCode(code) as Promise<DiscordTokenBundle>;
   }
 
-  private discordConfig(key: "clientId" | "clientSecret" | "redirectUri" | "botToken") {
-    const nested = this.config.get<string>(`discord.${key}`);
-    if (nested) return nested;
-    const envMap = {
-      clientId: "DISCORD_CLIENT_ID",
-      clientSecret: "DISCORD_CLIENT_SECRET",
-      redirectUri: "DISCORD_REDIRECT_URI",
-      botToken: "DISCORD_BOT_TOKEN",
-    } as const;
-    return this.config.getOrThrow<string>(envMap[key]);
-  }
-
-  async exchangeCode(code: string): Promise<DiscordTokenBundle> {
-    const res = await this.fetchWithRetry(`${this.discordApi}/oauth2/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: this.discordConfig("clientId"),
-        client_secret: this.discordConfig("clientSecret"),
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: this.discordConfig("redirectUri"),
-      }),
-    });
-    if (!res.ok) {
-      throw new Error("Failed to exchange Discord code");
-    }
-    const data = (await res.json()) as DiscordTokenResponse;
-    return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token ?? null,
-      expiresIn: data.expires_in,
-    };
-  }
-
-  async refreshAccessToken(refreshToken: string): Promise<DiscordTokenBundle> {
-    const res = await this.fetchWithRetry(`${this.discordApi}/oauth2/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: this.discordConfig("clientId"),
-        client_secret: this.discordConfig("clientSecret"),
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-      }),
-    });
-    if (!res.ok) {
-      throw new UnauthorizedException({
-        code: ErrorCodes.SESSION_EXPIRED,
-        message: "Failed to refresh Discord token",
-      });
-    }
-    const data = (await res.json()) as DiscordTokenResponse;
-    return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token ?? refreshToken,
-      expiresIn: data.expires_in,
-    };
+  refreshAccessToken(refreshToken: string): Promise<DiscordTokenBundle> {
+    return this.discord.refreshAccessToken(
+      refreshToken,
+    ) as Promise<DiscordTokenBundle>;
   }
 
   async getUser(accessToken: string): Promise<DiscordUser> {
-    const res = await this.fetchWithRetry(`${this.discordApi}/users/@me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (res.status === 401) {
-      throw new UnauthorizedException({
-        code: ErrorCodes.SESSION_EXPIRED,
-        message: "Discord access token rejected",
-      });
-    }
-    if (!res.ok) {
-      throw new Error("Failed to fetch Discord user");
-    }
-    return res.json() as Promise<DiscordUser>;
+    return this.discord.getCurrentUser(accessToken) as Promise<DiscordUser>;
   }
 
   /**
@@ -181,7 +76,8 @@ export class AuthService {
           message: "Session expired",
         });
       }
-      const refreshed = await this.refreshAccessToken(refreshToken);
+      const refreshed: ClientTokenBundle =
+        await this.discord.refreshAccessToken(refreshToken);
       await this.sessions.rotateTokens(active.session.id, refreshed);
       accessToken = refreshed.accessToken;
       refreshToken = refreshed.refreshToken ?? null;
@@ -204,58 +100,23 @@ export class AuthService {
     }
   }
 
-  async getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
-    const res = await this.fetchWithRetry(
-      `${this.discordApi}/users/@me/guilds`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
+  getUserGuilds(accessToken: string): Promise<DiscordApiGuild[]> {
+    return this.discord.getUserGuilds(accessToken);
+  }
+
+  async getCachedUserGuilds(
+    accessToken: string,
+    userId: string,
+  ): Promise<DiscordApiGuild[]> {
+    const { value } = await this.cache.getOrSet(
+      `discord:user:${userId}:guilds`,
+      () => this.discord.getUserGuilds(accessToken),
+      { ttlSeconds: 60, staleSeconds: 120, staleIfError: true },
     );
-    if (!res.ok) throw new Error("Failed to fetch Discord guilds");
-    return res.json() as Promise<DiscordGuild[]>;
+    return value;
   }
 
-  private async fetchBotGuildIds(): Promise<Set<string>> {
-    const botToken = this.discordConfig("botToken");
-    let allGuilds: { id: string }[] = [];
-    let after: string | undefined;
-
-    while (true) {
-      const url = new URL(`${this.discordApi}/users/@me/guilds`);
-      url.searchParams.set("limit", "200");
-      if (after) url.searchParams.set("after", after);
-
-      const res = await this.fetchWithRetry(url, {
-        headers: { Authorization: `Bot ${botToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch bot guilds");
-
-      const page = (await res.json()) as { id: string }[];
-      if (page.length === 0) break;
-
-      allGuilds = allGuilds.concat(page);
-      after = page[page.length - 1].id;
-      if (page.length < 200) break;
-    }
-
-    return new Set(allGuilds.map((g) => g.id));
-  }
-
-  private async getBotGuildIds(): Promise<Set<string>> {
-    const now = Date.now();
-    if (this.botGuildsCache && this.botGuildsCache.expiresAt > now) {
-      return this.botGuildsCache.data;
-    }
-
-    const data = await this.fetchBotGuildIds();
-    this.botGuildsCache = {
-      data,
-      expiresAt: now + this.BOT_GUILDS_CACHE_TTL,
-    };
-    return data;
-  }
-
-  hasRequiredPermission(guild: DiscordGuild): boolean {
+  hasRequiredPermission(guild: DiscordApiGuild): boolean {
     if (guild.owner) return true;
     const permBits = BigInt(guild.permissions);
     return (
@@ -267,8 +128,11 @@ export class AuthService {
   async checkUserGuildAccess(
     accessToken: string,
     guildId: string,
+    userId?: string,
   ): Promise<boolean> {
-    const guilds = await this.getUserGuilds(accessToken);
+    const guilds = userId
+      ? await this.getCachedUserGuilds(accessToken, userId)
+      : await this.getUserGuilds(accessToken);
     const guild = guilds.find((g) => g.id === guildId);
     if (!guild) return false;
     return this.hasRequiredPermission(guild);
@@ -276,17 +140,25 @@ export class AuthService {
 
   async getAllUserGuildsWithBotStatus(
     accessToken: string,
+    userId?: string,
   ): Promise<GuildWithBotStatus[]> {
     const [userGuilds, botGuildIds] = await Promise.all([
-      this.getUserGuilds(accessToken),
-      this.getBotGuildIds(),
+      userId
+        ? this.getCachedUserGuilds(accessToken, userId)
+        : this.getUserGuilds(accessToken),
+      this.cache.getOrSet(
+        "discord:bot-guild-ids",
+        () => this.discord.getBotGuildIds(),
+        { ttlSeconds: 60, staleSeconds: 600, staleIfError: true },
+      ),
     ]);
+    const botSet = new Set(botGuildIds.value);
 
     return userGuilds
       .filter((g) => this.hasRequiredPermission(g))
       .sort((a, b) => {
-        const aBot = botGuildIds.has(a.id) ? 0 : 1;
-        const bBot = botGuildIds.has(b.id) ? 0 : 1;
+        const aBot = botSet.has(a.id) ? 0 : 1;
+        const bBot = botSet.has(b.id) ? 0 : 1;
         return aBot - bBot;
       })
       .map((g) => ({
@@ -294,56 +166,15 @@ export class AuthService {
         name: g.name,
         icon: g.icon,
         owner: g.owner,
-        hasBot: botGuildIds.has(g.id),
+        hasBot: botSet.has(g.id),
       }));
   }
 
-  async getGuildInfo(
-    guildId: string,
-  ): Promise<{ id: string; name: string; icon: string | null }> {
-    const botToken = this.discordConfig("botToken");
-    const res = await this.fetchWithRetry(
-      `${this.discordApi}/guilds/${guildId}`,
-      {
-        headers: { Authorization: `Bot ${botToken}` },
-      },
-    );
-    if (!res.ok) throw new Error("Failed to fetch guild info");
-    const guild = (await res.json()) as {
-      id: string;
-      name: string;
-      icon: string | null;
-    };
-    return { id: guild.id, name: guild.name, icon: guild.icon };
+  getGuildInfo(guildId: string) {
+    return this.discord.getGuild(guildId);
   }
 
   async getGuildRoles(guildId: string): Promise<DiscordGuildRole[]> {
-    const botToken = this.discordConfig("botToken");
-    const res = await this.fetchWithRetry(
-      `${this.discordApi}/guilds/${guildId}/roles`,
-      {
-        headers: { Authorization: `Bot ${botToken}` },
-      },
-    );
-    if (!res.ok) throw new Error("Failed to fetch guild roles");
-    const roles = (await res.json()) as Array<{
-      id: string;
-      name: string;
-      color: number;
-      position: number;
-      mentionable: boolean;
-      hoist: boolean;
-    }>;
-    return roles
-      .filter((r) => r.id !== guildId)
-      .sort((a, b) => b.position - a.position)
-      .map((r) => ({
-        id: r.id,
-        name: r.name,
-        color: r.color,
-        position: r.position,
-        mentionable: r.mentionable,
-        hoist: r.hoist,
-      }));
+    return this.discord.getGuildRoles(guildId);
   }
 }

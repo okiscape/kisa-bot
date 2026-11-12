@@ -5,10 +5,40 @@ import MascotSlot from "@/components/mascot-slot"
 import Appear from "@/components/appear"
 import "./page.css"
 
-const communitiesCount = 12480
-const membersCount = 1204931
-const commandsCount = 48
-const uptimePercent = 99.9
+type MetricsPayload = {
+	guildCount?: number
+	userCount?: number
+	commandCount?: number
+}
+
+async function fetchLandingMetrics(): Promise<{
+	communitiesCount: number
+	membersCount: number
+	commandsCount: number
+}> {
+	const base = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001").replace(
+		/\/$/,
+		"",
+	)
+	try {
+		const res = await fetch(`${base}/metrics`, {
+			next: { revalidate: 30 },
+		})
+    if (!res.ok) {
+			return { communitiesCount: 0, membersCount: 0, commandsCount: 0 }
+		}
+		const body = (await res.json()) as { data?: MetricsPayload } & MetricsPayload
+		const data = body.data ?? body
+		return {
+			communitiesCount: Number(data.guildCount ?? 0),
+			membersCount: Number(data.userCount ?? 0),
+			commandsCount: Number(data.commandCount ?? 0),
+		}
+  } catch (e) {
+    console.error("fetch failed: " + e);
+		return { communitiesCount: 0, membersCount: 0, commandsCount: 0 }
+	}
+}
 
 const serverMembersCount = 1284
 const serverOnlineCount = 12
@@ -55,13 +85,17 @@ const _unknown_tempChats = [
 const _unknown_greetServer = "Server name"
 const _unknown_greetMention = "@Name"
 const _unknown_greetTime = "Today at 14:02"
-const _unknown_githubUrl = "https://github.com"
+const _unknown_githubUrl =
+	process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com"
 
 function formatCount(value: number) {
 	return value.toLocaleString("en-US")
 }
 
-export default function Landing() {
+export default async function Landing() {
+	const { communitiesCount, membersCount, commandsCount } =
+		await fetchLandingMetrics()
+
 	return (
 		<div className="landing">
 			<Header />
@@ -315,7 +349,7 @@ export default function Landing() {
 							</div>
 							<p className="message">
 								Welcome to {_unknown_greetServer}, <span>{_unknown_greetMention}</span>! Glad
-								you&apos;re here.
+								you're here.
 							</p>
 							<div className="embed">
 								<span className="bar" />
@@ -383,11 +417,6 @@ export default function Landing() {
 					<div className="stat">
 						<strong className="appear-number">{formatCount(commandsCount)}</strong>
 						<span>commands</span>
-					</div>
-					<span className="divider" />
-					<div className="stat">
-						<strong className="appear-number">{uptimePercent}%</strong>
-						<span>uptime</span>
 					</div>
 				</Appear>
 			</section>

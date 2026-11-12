@@ -6,9 +6,11 @@ import configuration from "./config/configuration";
 import { validateEnv } from "./config/env.validation";
 import { PrismaModule } from "./prisma/prisma.module";
 import { CacheModule } from "./cache/cache.module";
+import { DiscordModule } from "./discord/discord.module";
 import { AuthModule } from "./auth/auth.module";
 import { GuildsModule } from "./guilds/guilds.module";
 import { UsersModule } from "./users/users.module";
+import { MetricsModule } from "./metrics/metrics.module";
 import { HealthModule } from "./health/health.module";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
@@ -20,7 +22,8 @@ import { CsrfGuard } from "./auth/guards/csrf.guard";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env"],
+      // App-local `.env` wins over repo root (root often has empty DATABASE_URL stubs).
+      envFilePath: [".env", "../../.env"],
       load: [configuration],
       validate: validateEnv,
     }),
@@ -33,9 +36,11 @@ import { CsrfGuard } from "./auth/guards/csrf.guard";
     ]),
     PrismaModule,
     CacheModule,
+    DiscordModule,
     AuthModule,
     GuildsModule,
     UsersModule,
+    MetricsModule,
     HealthModule,
   ],
   providers: [

@@ -43,13 +43,24 @@ class RedisShutdown implements OnModuleDestroy {
           return null;
         }
         const redis = new Redis(url, {
-          maxRetriesPerRequest: 2,
+          maxRetriesPerRequest: 1,
           enableReadyCheck: true,
+          connectTimeout: 1_000,
+          commandTimeout: 1_000,
+          enableOfflineQueue: false,
+          lazyConnect: true,
         });
         redis.on("error", (err) => {
           logger.warn(`Redis error: ${err.message}`);
         });
-        logger.log("Using Redis cache store");
+        redis
+          .connect()
+          .then(() => logger.log("Using Redis cache store"))
+          .catch((err: Error) => {
+            logger.warn(
+              `Redis unavailable (${err.message}); cache ops will no-op/fail soft`,
+            );
+          });
         return redis;
       },
     },
