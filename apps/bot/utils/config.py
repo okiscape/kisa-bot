@@ -75,6 +75,9 @@ support_invite_url = env.get("SUPPORT_INVITE_URL") or "https://discord.gg"
 version_name = env.get("BOT_VERSION_NAME") or "kisa"
 version_number = env.get("BOT_VERSION_NUMBER") or "0.1"
 
+# Optional; empty disables Redis (backend/bot can run without it).
+redis_url = (env.get("REDIS_URL") or "").strip()
+
 
 class colors:
     spotify_main = 0x1ED760

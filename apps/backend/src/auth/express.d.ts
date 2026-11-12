@@ -1,7 +1,12 @@
 import { DiscordUser } from "./discord-user.interface";
 
-declare module "express" {
+declare global {
+  namespace Express {
     interface Request {
-        discordUser?: DiscordUser;
+      discordUser?: DiscordUser;
+      requestId?: string;
     }
+  }
 }
+
+export {};
