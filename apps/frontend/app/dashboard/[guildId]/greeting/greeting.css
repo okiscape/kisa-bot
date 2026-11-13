@@ -250,6 +250,52 @@
 					white-space: pre-wrap;
 					line-height: 1.45;
 					font-family: var(--font-body);
+
+					.md-h1,
+					.md-h2,
+					.md-h3 {
+						margin: 0.35em 0 0.15em;
+						font-family: var(--font-display);
+						font-weight: 700;
+						line-height: 1.25;
+						color: #f2f3f5;
+					}
+
+					.md-h1 {
+						font-size: 1.35em;
+					}
+
+					.md-h2 {
+						font-size: 1.2em;
+					}
+
+					.md-h3 {
+						font-size: 1.05em;
+					}
+
+					.md-quote {
+						margin: 0.35em 0;
+						padding: 0 0 0 12px;
+						border-left: 3px solid #4e5058;
+						color: #c4c9ce;
+					}
+
+					code {
+						padding: 0.1em 0.35em;
+						border-radius: 4px;
+						background: #1e1f22;
+						font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+						font-size: 0.9em;
+					}
+
+					a {
+						color: #00a8fc;
+						text-decoration: none;
+
+						&:hover {
+							text-decoration: underline;
+						}
+					}
 				}
 
 				> .msg-embed {
@@ -270,6 +316,8 @@
 					> .embed-title {
 						font-family: var(--font-display);
 						font-size: 1rem;
+						font-weight: 700;
+						white-space: pre-wrap;
 					}
 
 					> .embed-desc {
@@ -278,6 +326,52 @@
 						font-size: 0.9375rem;
 						line-height: 1.4;
 						white-space: pre-wrap;
+
+						.md-h1,
+						.md-h2,
+						.md-h3 {
+							margin: 0.35em 0 0.15em;
+							font-family: var(--font-display);
+							font-weight: 700;
+							line-height: 1.25;
+							color: #f2f3f5;
+						}
+
+						.md-h1 {
+							font-size: 1.35em;
+						}
+
+						.md-h2 {
+							font-size: 1.2em;
+						}
+
+						.md-h3 {
+							font-size: 1.05em;
+						}
+
+						.md-quote {
+							margin: 0.35em 0;
+							padding: 0 0 0 12px;
+							border-left: 3px solid #4e5058;
+							color: #c4c9ce;
+						}
+
+						code {
+							padding: 0.1em 0.35em;
+							border-radius: 4px;
+							background: #1e1f22;
+							font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+							font-size: 0.9em;
+						}
+
+						a {
+							color: #00a8fc;
+							text-decoration: none;
+
+							&:hover {
+								text-decoration: underline;
+							}
+						}
 					}
 
 					> .embed-image {

@@ -8,6 +8,7 @@ import {
 	type UserSettingsDto,
 } from "@/lib/cabinet"
 import { discordAvatarUrl, displayName } from "@/lib/discord"
+import { MarkdownText } from "@/lib/simple-markdown"
 
 function formatDiscordTs(date: Date): string {
 	const abs = date.toLocaleString("en-GB", {
@@ -160,7 +161,7 @@ export default function UserPreview({
 				{showMembership ? (
 					<div className="msg-embed membership" style={{ borderColor: color }}>
 						{profile.aboutMe ? (
-							<p className="embed-desc">{profile.aboutMe}</p>
+							<MarkdownText className="embed-desc" text={profile.aboutMe} />
 						) : (
 							<p className="muted-line">No about me text</p>
 						)}

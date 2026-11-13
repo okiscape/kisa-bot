@@ -20,6 +20,7 @@ import {
 	type MessageEmbedConfig,
 	type SettingsOptions,
 } from "@/lib/message-config"
+import { MarkdownText } from "@/lib/simple-markdown"
 
 const PREVIEW_VARS = {
 	mention: "@user",
@@ -269,14 +270,20 @@ export default function MessageEditor({
 							<span className="time">Today at 12:00</span>
 						</div>
 					</div>
-					{previewContent ? <p className="msg-content">{previewContent}</p> : null}
+					{previewContent ? (
+						<MarkdownText className="msg-content" text={previewContent} />
+					) : null}
 					{embed.title || embed.description || embed.imageUrl ? (
 						<div className="msg-embed" style={{ borderColor: previewColor }}>
 							{embed.authorName ? (
 								<div className="embed-author">{embed.authorName}</div>
 							) : null}
-							{previewTitle ? <strong className="embed-title">{previewTitle}</strong> : null}
-							{previewDesc ? <p className="embed-desc">{previewDesc}</p> : null}
+							{previewTitle ? (
+								<MarkdownText className="embed-title" text={previewTitle} />
+							) : null}
+							{previewDesc ? (
+								<MarkdownText className="embed-desc" text={previewDesc} />
+							) : null}
 							{embed.imageUrl ? (
 								<img className="embed-image" src={embed.imageUrl} alt="" />
 							) : (
