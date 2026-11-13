@@ -16,6 +16,10 @@ import {
   UserSettingsDto,
 } from "./user-settings.defaults";
 import { DiscordUser } from "../auth/discord-user.interface";
+import {
+  userProfileCacheKey,
+  userSettingsCacheKey,
+} from "../cache/app-cache-keys";
 
 @Injectable()
 export class UsersService {
@@ -62,6 +66,7 @@ export class UsersService {
       create: { userId: BigInt(userId), ...patch },
       update: patch,
     });
+    await this.cache.delete(userProfileCacheKey(userId));
     return this.getProfile(userId);
   }
 
@@ -73,6 +78,7 @@ export class UsersService {
     } catch {
       // already absent
     }
+    await this.cache.delete(userProfileCacheKey(userId));
     return defaultUserProfile(userId);
   }
 
@@ -100,6 +106,7 @@ export class UsersService {
       create: { userId: BigInt(userId), ...patch },
       update: patch,
     });
+    await this.cache.delete(userSettingsCacheKey(userId));
     return this.getSettings(userId);
   }
 
@@ -111,6 +118,7 @@ export class UsersService {
     } catch {
       // already absent
     }
+    await this.cache.delete(userSettingsCacheKey(userId));
     return defaultUserSettings(userId);
   }
 

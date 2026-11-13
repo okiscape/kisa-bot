@@ -51,6 +51,15 @@ class AsyncLRUTTLCache:
             while len(self.store) > self.maxsize:
                 self.store.popitem(last=False)
 
+    async def delete(self, key):
+        async with self.lock:
+            self.store.pop(key, None)
+
+    async def delete_matching(self, substring: str):
+        async with self.lock:
+            for key in [k for k in self.store if substring in str(k)]:
+                del self.store[key]
+
     async def resolve(self, key, resolver_coro):
         """Возвращает cached value или вызывает resolver_coro() для получения и сохранения."""
         val = await self.get(key)
@@ -187,9 +196,12 @@ class ServerSettingsRecord:
         self.guild_id = guild_id
         self.average_language = average_language
         self.bad_words = bad_words
-        self.notified_moderators = notified_moderators
-        if notified_moderators:
-            self.notified_moderators = notified_moderators.split(",")
+        if isinstance(notified_moderators, list):
+            self.notified_moderators = notified_moderators
+        elif notified_moderators:
+            self.notified_moderators = str(notified_moderators).split(",")
+        else:
+            self.notified_moderators = notified_moderators
         self.notify_channel = notify_channel
         self.bad_words_action = bad_words_action
         self.join_channel = join_channel

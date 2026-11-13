@@ -1,17 +1,18 @@
-"""Optional Redis client for the bot.
-
-Phase 1 stub: connect when REDIS_URL is set. Feature consumers land later
-(metrics cache, shared locks, etc.).
-"""
+"""Optional Redis client for the bot."""
 
 from __future__ import annotations
 
-from typing import Optional
+import json
+import time
+from dataclasses import dataclass
+from typing import Any, Literal, Optional
 
 from utils import config
 from utils.bot_logging import Logging
 
 logging = Logging()
+
+SETTINGS_CACHE_TTL_SECONDS = 30
 
 _redis = None
 _import_error: Optional[Exception] = None
@@ -21,6 +22,26 @@ try:
 except Exception as exc:  # pragma: no cover - optional dependency
     redis_async = None
     _import_error = exc
+
+
+def guild_settings_key(guild_id: int | str) -> str:
+    return f"app:guild:{guild_id}:settings"
+
+
+def user_settings_key(user_id: int | str) -> str:
+    return f"app:user:{user_id}:settings"
+
+
+def user_profile_key(user_id: int | str) -> str:
+    return f"app:user:{user_id}:profile"
+
+
+@dataclass(frozen=True)
+class RedisLookup:
+    """Distinguish cache hit / miss from Redis being disabled or down."""
+
+    status: Literal["hit", "miss", "unavailable"]
+    value: Any = None
 
 
 async def get_redis():
@@ -60,3 +81,77 @@ async def close_redis() -> None:
         except Exception:
             pass
         _redis = None
+
+
+def _unwrap_payload(raw: str) -> Any | None:
+    """Accept Nest CacheService envelopes or plain JSON values.
+
+    Returns a sentinel miss when the envelope is expired/corrupt.
+    """
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return None
+
+    if isinstance(data, dict) and "value" in data and "expiresAt" in data:
+        stale_until = data.get("staleExpiresAt", data["expiresAt"])
+        try:
+            if time.time() * 1000 > float(stale_until):
+                return None
+        except Exception:
+            return None
+        return data["value"]
+
+    return data
+
+
+async def redis_get_json(key: str) -> RedisLookup:
+    client = await get_redis()
+    if client is None:
+        return RedisLookup("unavailable")
+    try:
+        raw = await client.get(key)
+        if raw is None:
+            return RedisLookup("miss")
+        value = _unwrap_payload(raw)
+        if value is None and raw is not None:
+            # Expired / corrupt envelope — treat as miss so caller refills.
+            return RedisLookup("miss")
+        return RedisLookup("hit", value)
+    except Exception as exc:
+        logging.warning("redis", f"get failed for {key}: {exc}", type="warn")
+        return RedisLookup("unavailable")
+
+
+async def redis_set_json(
+    key: str,
+    value: Any,
+    ttl_seconds: int = SETTINGS_CACHE_TTL_SECONDS,
+) -> None:
+    client = await get_redis()
+    if client is None:
+        return
+    now_ms = int(time.time() * 1000)
+    payload = {
+        "value": value,
+        "expiresAt": now_ms + ttl_seconds * 1000,
+        "staleExpiresAt": now_ms + ttl_seconds * 1000,
+    }
+    try:
+        await client.set(
+            key,
+            json.dumps(payload, default=str),
+            ex=max(ttl_seconds, 1) + 1,
+        )
+    except Exception as exc:
+        logging.warning("redis", f"set failed for {key}: {exc}", type="warn")
+
+
+async def redis_delete(key: str) -> None:
+    client = await get_redis()
+    if client is None:
+        return
+    try:
+        await client.delete(key)
+    except Exception as exc:
+        logging.warning("redis", f"delete failed for {key}: {exc}", type="warn")

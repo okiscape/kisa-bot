@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { TokenCryptoService } from "../auth/token-crypto.service";
+import { CacheService } from "../cache/cache.service";
+import { userSettingsCacheKey } from "../cache/app-cache-keys";
 import { OsuApiClient, OsuTokenResponse } from "./osu-api.client";
 import { LastfmApiClient } from "./lastfm-api.client";
 
@@ -41,9 +43,14 @@ export class IntegrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: TokenCryptoService,
+    private readonly cache: CacheService,
     private readonly osu: OsuApiClient,
     private readonly lastfm: LastfmApiClient,
   ) {}
+
+  private async invalidateUserSettings(userId: string): Promise<void> {
+    await this.cache.delete(userSettingsCacheKey(userId));
+  }
 
   async getStatus(userId: string): Promise<IntegrationStatus> {
     const row = await this.prisma.userSettings.findUnique({
@@ -130,6 +137,7 @@ export class IntegrationsService {
       create: { userId: BigInt(userId), ...patch },
       update: patch,
     });
+    await this.invalidateUserSettings(userId);
 
     return this.getStatus(userId);
   }
@@ -146,6 +154,7 @@ export class IntegrationsService {
         osuTokenExpiresAt: null,
       },
     });
+    await this.invalidateUserSettings(userId);
     return this.getStatus(userId);
   }
 
@@ -163,6 +172,7 @@ export class IntegrationsService {
       create: { userId: BigInt(userId), ...patch },
       update: patch,
     });
+    await this.invalidateUserSettings(userId);
 
     return this.getStatus(userId);
   }
@@ -176,6 +186,7 @@ export class IntegrationsService {
         lastfmSessionKeyEncrypted: null,
       },
     });
+    await this.invalidateUserSettings(userId);
     return this.getStatus(userId);
   }
 }

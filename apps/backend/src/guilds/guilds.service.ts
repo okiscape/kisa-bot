@@ -27,6 +27,7 @@ import {
   normalizeLoggingConfig,
   normalizeReactionRoles,
 } from "./logging-config";
+import { guildSettingsCacheKey } from "../cache/app-cache-keys";
 
 const PERMISSIONS = {
   ADMINISTRATOR: 0x8n,
@@ -245,6 +246,7 @@ export class GuildsService {
       create: { guildId: BigInt(guildId), ...processed },
       update: processed,
     });
+    await this.cache.delete(guildSettingsCacheKey(guildId));
 
     return this.getSettings(guildId);
   }
@@ -258,6 +260,7 @@ export class GuildsService {
     } catch {
       // already defaults
     }
+    await this.cache.delete(guildSettingsCacheKey(guildId));
     return defaultGuildSettings(guildId);
   }
 

@@ -1,5 +1,17 @@
+import json
+from datetime import datetime
+
 import asyncpg
 from utils.bot_logging import Logging
+from utils.redis_client import (
+    SETTINGS_CACHE_TTL_SECONDS,
+    guild_settings_key,
+    redis_delete,
+    redis_get_json,
+    redis_set_json,
+    user_profile_key,
+    user_settings_key,
+)
 from utils.types import (
     AsyncLRUTTLCache,
     Filter,
@@ -498,6 +510,178 @@ class DatabaseManager:
             return cached
         return None
 
+    @staticmethod
+    def _jsonable(value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if isinstance(value, (bytes, bytearray)):
+            return value.decode("utf-8", errors="replace")
+        if isinstance(value, str):
+            text = value.strip()
+            if text.startswith("{") or text.startswith("["):
+                try:
+                    return json.loads(text)
+                except Exception:
+                    return value
+            return value
+        return value
+
+    def _serialize_user_settings(self, rows: list[UserSettingsRecord]):
+        out = []
+        for row in rows:
+            out.append(
+                {
+                    "user_id": int(row.user_id),
+                    "timezone": row.timezone,
+                    "osu_username": row.osu_username,
+                    "osu_user_id": int(row.osu_user_id)
+                    if row.osu_user_id is not None
+                    else None,
+                    "osu_access_token_encrypted": row.osu_access_token_encrypted,
+                    "osu_refresh_token_encrypted": row.osu_refresh_token_encrypted,
+                    "osu_token_expires_at": self._jsonable(row.osu_token_expires_at),
+                    "lastfm_username": row.lastfm_username,
+                    "lastfm_session_key_encrypted": row.lastfm_session_key_encrypted,
+                }
+            )
+        return out
+
+    def _hydrate_user_settings(self, payload) -> list[UserSettingsRecord]:
+        rows = payload if isinstance(payload, list) else [payload]
+        out: list[UserSettingsRecord] = []
+        for row in rows:
+            out.append(
+                UserSettingsRecord(
+                    user_id=int(row["user_id"]),
+                    timezone=row.get("timezone"),
+                    osu_username=row.get("osu_username"),
+                    osu_user_id=int(row["osu_user_id"])
+                    if row.get("osu_user_id") is not None
+                    else None,
+                    osu_access_token_encrypted=row.get("osu_access_token_encrypted"),
+                    osu_refresh_token_encrypted=row.get("osu_refresh_token_encrypted"),
+                    osu_token_expires_at=row.get("osu_token_expires_at"),
+                    lastfm_username=row.get("lastfm_username"),
+                    lastfm_session_key_encrypted=row.get(
+                        "lastfm_session_key_encrypted"
+                    ),
+                )
+            )
+        return out
+
+    def _serialize_user_profiles(self, rows: list[UserProfileRecord]):
+        return [
+            {
+                "user_id": int(row.user_id),
+                "about_me": row.about_me,
+                "color": row.color,
+                "custom_image": row.custom_image,
+            }
+            for row in rows
+        ]
+
+    def _hydrate_user_profiles(self, payload) -> list[UserProfileRecord]:
+        rows = payload if isinstance(payload, list) else [payload]
+        return [
+            UserProfileRecord(
+                user_id=int(row["user_id"]),
+                about_me=row.get("about_me"),
+                color=row.get("color"),
+                custom_image=row.get("custom_image"),
+            )
+            for row in rows
+        ]
+
+    def _serialize_server_settings(self, rows: list[ServerSettingsRecord]):
+        out = []
+        for row in rows:
+            mods = row.notified_moderators
+            if isinstance(mods, list):
+                mods = ",".join(str(m) for m in mods)
+            out.append(
+                {
+                    "guild_id": int(row.guild_id),
+                    "average_language": row.average_language,
+                    "bad_words": row.bad_words,
+                    "notified_moderators": mods,
+                    "notify_channel": row.notify_channel,
+                    "bad_words_action": row.bad_words_action,
+                    "join_channel": row.join_channel,
+                    "leave_channel": row.leave_channel,
+                    "post_channel": row.post_channel,
+                    "mute_role": row.mute_role,
+                    "auto_role": row.auto_role,
+                    "log_channel": row.log_channel,
+                    "verified_role": row.verified_role,
+                    "ticket_category": row.ticket_category,
+                    "fare_text": row.fare_text,
+                    "fare_color": row.fare_color,
+                    "fare_image": row.fare_image,
+                    "greet_text": row.greet_text,
+                    "greet_color": row.greet_color,
+                    "greet_image": row.greet_image,
+                    "private_cr_channel": row.private_cr_channel,
+                    "private_category": row.private_category,
+                    "custom_greet": row.custom_greet,
+                    "custom_fare": row.custom_fare,
+                    "notify_text": row.notify_text,
+                    "greeting_config": self._jsonable(row.greeting_config),
+                    "farewell_config": self._jsonable(row.farewell_config),
+                }
+            )
+        return out
+
+    def _hydrate_server_settings(self, payload) -> list[ServerSettingsRecord]:
+        rows = payload if isinstance(payload, list) else [payload]
+        out: list[ServerSettingsRecord] = []
+        for row in rows:
+            out.append(
+                ServerSettingsRecord(
+                    guild_id=int(row["guild_id"]),
+                    average_language=row.get("average_language"),
+                    bad_words=row.get("bad_words"),
+                    notified_moderators=row.get("notified_moderators"),
+                    notify_channel=row.get("notify_channel"),
+                    bad_words_action=row.get("bad_words_action"),
+                    join_channel=row.get("join_channel"),
+                    leave_channel=row.get("leave_channel"),
+                    post_channel=row.get("post_channel"),
+                    mute_role=row.get("mute_role"),
+                    auto_role=row.get("auto_role"),
+                    log_channel=row.get("log_channel"),
+                    verified_role=row.get("verified_role"),
+                    ticket_category=row.get("ticket_category"),
+                    fare_text=row.get("fare_text"),
+                    fare_color=row.get("fare_color"),
+                    fare_image=row.get("fare_image"),
+                    greet_text=row.get("greet_text"),
+                    greet_color=row.get("greet_color"),
+                    greet_image=row.get("greet_image"),
+                    private_cr_channel=row.get("private_cr_channel"),
+                    private_category=row.get("private_category"),
+                    custom_greet=row.get("custom_greet"),
+                    custom_fare=row.get("custom_fare"),
+                    notify_text=row.get("notify_text"),
+                    greeting_config=self._jsonable(row.get("greeting_config")),
+                    farewell_config=self._jsonable(row.get("farewell_config")),
+                )
+            )
+        return out
+
+    async def _invalidate_user_settings(self, user_id: int):
+        await redis_delete(user_settings_key(user_id))
+        await self.caches.userSetting.delete_matching(f"{user_id};")
+
+    async def _invalidate_user_profiles(self, user_id: int):
+        await redis_delete(user_profile_key(user_id))
+        await self.caches.userProfiles.delete_matching(f"{user_id};")
+
+    async def _invalidate_server_settings(self, guild_id: int):
+        await redis_delete(guild_settings_key(guild_id))
+        await self.caches.serverSettings.delete_matching(f"{guild_id};")
+
     async def readUserSettings(
         self,
         user_id: int = None,
@@ -509,9 +693,26 @@ class DatabaseManager:
     ) -> list[UserSettingsRecord]:
         _cachekey = f"{user_id};{limit};{offset};{orderBy};{orderDir}"
         if not cacheOverwrite:
-            cached = await self._getCached(store=self.caches.userSetting, key=_cachekey)
-            if cached:
-                return cached
+            if user_id:
+                lookup = await redis_get_json(user_settings_key(user_id))
+                if lookup.status == "hit":
+                    cached = self._hydrate_user_settings(lookup.value)
+                    await self.caches.userSetting.set(_cachekey, cached)
+                    return cached
+                # Redis miss → skip local (honor Nest invalidation).
+                # Redis unavailable → fall through to local LRU.
+                if lookup.status == "unavailable":
+                    cached = await self._getCached(
+                        store=self.caches.userSetting, key=_cachekey
+                    )
+                    if cached:
+                        return cached
+            else:
+                cached = await self._getCached(
+                    store=self.caches.userSetting, key=_cachekey
+                )
+                if cached:
+                    return cached
         filters = []
         if user_id:
             filters.append(Filter("user_id", user_id))
@@ -551,6 +752,12 @@ class DatabaseManager:
                 )
             )
 
+        if user_id:
+            await redis_set_json(
+                user_settings_key(user_id),
+                self._serialize_user_settings(to_return),
+                SETTINGS_CACHE_TTL_SECONDS,
+            )
         await self.caches.userSetting.set(_cachekey, to_return)
 
         return to_return
@@ -579,6 +786,7 @@ class DatabaseManager:
             lastfm_username=lastfm_username,
             lastfm_session_key_encrypted=lastfm_session_key_encrypted,
         )
+        await self._invalidate_user_settings(user_id)
 
     async def updateUserSettings(
         self,
@@ -613,6 +821,7 @@ class DatabaseManager:
         await self.db.update(
             table="user_settings", filters=[Filter("user_id", user_id)], **updates
         )
+        await self._invalidate_user_settings(user_id)
 
     async def readOsuLink(self, user_id: int, cacheOverwrite: bool = False):
         """Return osu link fields for a user, or None when unlinked."""
@@ -657,11 +866,24 @@ class DatabaseManager:
 
         _cachekey = f"{user_id};{limit};{offset};{orderBy};{orderDir}"
         if not cacheOverwrite:
-            cached = await self._getCached(
-                store=self.caches.userProfiles, key=_cachekey
-            )
-            if cached:
-                return cached
+            if user_id:
+                lookup = await redis_get_json(user_profile_key(user_id))
+                if lookup.status == "hit":
+                    cached = self._hydrate_user_profiles(lookup.value)
+                    await self.caches.userProfiles.set(_cachekey, cached)
+                    return cached
+                if lookup.status == "unavailable":
+                    cached = await self._getCached(
+                        store=self.caches.userProfiles, key=_cachekey
+                    )
+                    if cached:
+                        return cached
+            else:
+                cached = await self._getCached(
+                    store=self.caches.userProfiles, key=_cachekey
+                )
+                if cached:
+                    return cached
         filters = []
         if user_id:
             filters.append(Filter("user_id", user_id))
@@ -683,6 +905,12 @@ class DatabaseManager:
                 )
             )
 
+        if user_id:
+            await redis_set_json(
+                user_profile_key(user_id),
+                self._serialize_user_profiles(to_return),
+                SETTINGS_CACHE_TTL_SECONDS,
+            )
         await self.caches.userProfiles.set(_cachekey, to_return)
 
         return to_return
@@ -701,6 +929,7 @@ class DatabaseManager:
             color=color,
             custom_image=custom_image,
         )
+        await self._invalidate_user_profiles(user_id)
 
     async def updateUserProfile(
         self,
@@ -720,6 +949,7 @@ class DatabaseManager:
         await self.db.update(
             table="user_profiles", filters=[Filter("user_id", user_id)], **updates
         )
+        await self._invalidate_user_profiles(user_id)
 
     async def createSerververse(
         self,
@@ -823,11 +1053,24 @@ class DatabaseManager:
 
         _cachekey = f"{guild_id};{limit};{offset};{orderBy};{orderDir}"
         if not cacheOverwrite:
-            cached = await self._getCached(
-                store=self.caches.serverSettings, key=_cachekey
-            )
-            if cached:
-                return cached
+            if guild_id:
+                lookup = await redis_get_json(guild_settings_key(guild_id))
+                if lookup.status == "hit":
+                    cached = self._hydrate_server_settings(lookup.value)
+                    await self.caches.serverSettings.set(_cachekey, cached)
+                    return cached
+                if lookup.status == "unavailable":
+                    cached = await self._getCached(
+                        store=self.caches.serverSettings, key=_cachekey
+                    )
+                    if cached:
+                        return cached
+            else:
+                cached = await self._getCached(
+                    store=self.caches.serverSettings, key=_cachekey
+                )
+                if cached:
+                    return cached
         filters = []
         if guild_id:
             filters.append(Filter("guild_id", guild_id))
@@ -903,6 +1146,12 @@ class DatabaseManager:
                 )
             )
 
+        if guild_id:
+            await redis_set_json(
+                guild_settings_key(guild_id),
+                self._serialize_server_settings(to_return),
+                SETTINGS_CACHE_TTL_SECONDS,
+            )
         await self.caches.serverSettings.set(_cachekey, to_return)
 
         return to_return
@@ -963,6 +1212,7 @@ class DatabaseManager:
             custom_fare=custom_fare,
             notify_text=notify_text,
         )
+        await self._invalidate_server_settings(guild_id)
 
     async def updateServerSettings(self, guild_id: int, **kwargs):
         await self.db.update(
@@ -970,12 +1220,14 @@ class DatabaseManager:
             filters=[Filter("guild_id", guild_id)],
             **kwargs,
         )
+        await self._invalidate_server_settings(guild_id)
 
     async def deleteServerSettings(self, guild_id: int):
         await self.db.delete(
             table="server_settings",
             filters=[Filter("guild_id", guild_id)],
         )
+        await self._invalidate_server_settings(guild_id)
 
     async def updateSocialRating(self, user_id: int, to_rating: int):
         await self.db.update(
