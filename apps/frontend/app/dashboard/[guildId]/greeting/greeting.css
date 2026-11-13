@@ -1,0 +1,326 @@
+.greeting {
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+
+	> .head {
+		> .tabs {
+			display: flex;
+			align-items: flex-end;
+			gap: 40px;
+
+			> .tab {
+				background: none;
+				border: 0;
+				padding: 0 0 12px;
+				font-family: var(--font-display);
+				font-size: 2.75rem;
+				font-weight: 700;
+				letter-spacing: -0.02em;
+				color: var(--color-muted);
+				cursor: pointer;
+				position: relative;
+				line-height: 1.05;
+
+				&.on {
+					color: var(--color-text);
+
+					&::after {
+						content: "";
+						position: absolute;
+						left: 0;
+						bottom: 0;
+						width: 56px;
+						height: 6px;
+						border-radius: 999px;
+						background: var(--color-accent3);
+					}
+				}
+			}
+		}
+
+		> .lead {
+			margin-top: 18px;
+			color: var(--color-muted);
+			font-family: var(--font-body);
+			font-size: 1.0625rem;
+		}
+	}
+
+	> .editor {
+		display: grid;
+		grid-template-columns: 800px 400px;
+		gap: 80px;
+		align-items: start;
+
+		> .form {
+			min-width: 0;
+			width: 800px;
+
+			> .enable {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 24px;
+				padding: 8px 0 24px;
+
+				> div {
+					> strong {
+						display: block;
+						font-family: var(--font-display);
+						font-size: 1.0625rem;
+					}
+
+					> span {
+						display: block;
+						margin-top: 4px;
+						color: var(--color-muted);
+						font-family: var(--font-body);
+						font-size: 0.875rem;
+					}
+				}
+			}
+
+			> .webhook-input,
+			.webhook-input {
+				width: 100%;
+				height: 52px;
+				padding: 0 22px;
+				border-radius: 16px;
+				border: 1px solid var(--color-border);
+				background: transparent;
+				color: var(--color-text);
+				font-family: var(--font-body);
+				font-size: 0.9375rem;
+				outline: none;
+				box-sizing: border-box;
+
+				&:focus {
+					border-color: color-mix(in srgb, var(--color-border) 40%, #fff 60%);
+				}
+			}
+
+			.var-chips {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin-top: 14px;
+
+				> .chip {
+					height: 38px;
+					padding: 0 16px;
+					border-radius: 999px;
+					border: 1px solid var(--color-border);
+					background: transparent;
+					color: var(--color-muted);
+					font-family: var(--font-display);
+					font-size: 0.875rem;
+					cursor: pointer;
+
+					&:hover {
+						color: var(--color-text);
+					}
+				}
+			}
+
+			.embed-toggle {
+				width: 100%;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				background: none;
+				border: 0;
+				padding: 0;
+				color: var(--color-text);
+				font-family: var(--font-display);
+				font-size: 1rem;
+				cursor: pointer;
+				margin-bottom: 16px;
+
+				> .chevron {
+					transition: transform 0.15s ease;
+					color: var(--color-muted);
+
+					&.open {
+						transform: rotate(180deg);
+					}
+				}
+			}
+
+			.embed-fields {
+				display: flex;
+				flex-direction: column;
+				gap: 16px;
+			}
+
+			.add-embed {
+				align-self: flex-start;
+				height: 44px;
+				padding: 0 18px;
+				border-radius: 999px;
+				border: 1px solid var(--color-border);
+				background: transparent;
+				color: var(--color-text);
+				font-family: var(--font-display);
+				cursor: pointer;
+			}
+
+			.rule-actions {
+				padding: 16px 0;
+			}
+		}
+
+		> .preview {
+			position: sticky;
+			top: 24px;
+			width: 400px;
+
+			> .side-head {
+				margin-bottom: 18px;
+
+				> strong {
+					display: block;
+					font-family: var(--font-display);
+					font-size: 1.25rem;
+				}
+
+				> span {
+					display: block;
+					margin-top: 6px;
+					color: var(--color-muted);
+					font-family: var(--font-body);
+					font-size: 0.875rem;
+				}
+			}
+
+			> .discord-msg {
+				border: 1px solid var(--color-border);
+				border-radius: 16px;
+				padding: 18px;
+				background: #111214;
+
+				> .msg-head {
+					display: flex;
+					align-items: center;
+					gap: 12px;
+
+					> .bot-avatar {
+						width: 44px;
+						height: 44px;
+						border-radius: 50%;
+						background: radial-gradient(circle at 30% 30%, #ffb36b, #5a2d12);
+						flex-shrink: 0;
+					}
+
+					> div {
+						> .name-row {
+							display: flex;
+							align-items: center;
+							gap: 8px;
+
+							> strong {
+								font-family: var(--font-display);
+							}
+
+							> .bot-tag {
+								display: inline-flex;
+								align-items: center;
+								height: 18px;
+								padding: 0 6px;
+								border-radius: 4px;
+								background: #5865f2;
+								color: #fff;
+								font-size: 0.625rem;
+								font-weight: 700;
+							}
+						}
+
+						> .time {
+							display: block;
+							margin-top: 2px;
+							font-family: var(--font-body);
+							font-size: 0.75rem;
+							color: var(--color-muted-2);
+						}
+					}
+				}
+
+				> .msg-content {
+					margin-top: 12px;
+					white-space: pre-wrap;
+					line-height: 1.45;
+					font-family: var(--font-body);
+				}
+
+				> .msg-embed {
+					margin-top: 12px;
+					border-left: 4px solid;
+					border-radius: 4px;
+					background: #2b2d31;
+					padding: 14px 16px;
+					display: flex;
+					flex-direction: column;
+					gap: 8px;
+
+					> .embed-author {
+						font-size: 0.8125rem;
+						font-weight: 600;
+					}
+
+					> .embed-title {
+						font-family: var(--font-display);
+						font-size: 1rem;
+					}
+
+					> .embed-desc {
+						color: #dbdee1;
+						font-family: var(--font-body);
+						font-size: 0.9375rem;
+						line-height: 1.4;
+						white-space: pre-wrap;
+					}
+
+					> .embed-image {
+						width: 100%;
+						max-height: 160px;
+						object-fit: cover;
+						border-radius: 8px;
+						margin-top: 4px;
+
+						&.placeholder {
+							height: 120px;
+							background: linear-gradient(135deg, #3a3a3a, #1f1f1f);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+@media (max-width: 1280px) {
+	.greeting > .editor {
+		grid-template-columns: 1fr;
+		gap: 40px;
+
+		> .form {
+			width: 100%;
+		}
+
+		> .preview {
+			position: static;
+			width: 400px;
+			max-width: 100%;
+		}
+	}
+}
+
+@media (max-width: 700px) {
+	.greeting > .head > .tabs {
+		gap: 20px;
+
+		> .tab {
+			font-size: 1.75rem;
+		}
+	}
+}

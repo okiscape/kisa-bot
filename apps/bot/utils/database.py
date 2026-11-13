@@ -53,6 +53,11 @@ db_schema = {
         "custom_fare": "TEXT",
         "notify_text": "TEXT",
         "collect_metrics": "BOOL",
+        "greeting_config": "JSONB",
+        "farewell_config": "JSONB",
+        "logging_config": "JSONB",
+        "honeypot_channel": "BIGINT",
+        "reaction_roles": "JSONB",
     },
     "social_rating": {"user_id": "BIGINT PRIMARY KEY", "rating": "INTEGER DEFAULT 0"},
     "serververse": {
@@ -763,6 +768,8 @@ class DatabaseManager:
                     "custom_greet",
                     "custom_fare",
                     "notify_text",
+                    "greeting_config",
+                    "farewell_config",
                 ],
                 filters=filters,
             )
@@ -798,6 +805,8 @@ class DatabaseManager:
                     custom_greet=row[22],
                     custom_fare=row[23],
                     notify_text=row[24],
+                    greeting_config=row[25],
+                    farewell_config=row[26],
                 )
             )
 

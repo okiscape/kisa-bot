@@ -27,10 +27,13 @@ export default function Button({
 	const classes = clsx("button", variant, size, className)
 
 	if (href) {
-		const external = href.startsWith("http") || href.startsWith("/login")
+		const external =
+			href.startsWith("http") ||
+			href.startsWith("/login") ||
+			href.includes("discord.com")
 		if (external) {
 			return (
-				<a className={classes} href={href}>
+				<a className={classes} href={href} rel={href.startsWith("http") ? "noreferrer" : undefined}>
 					{children}
 				</a>
 			)

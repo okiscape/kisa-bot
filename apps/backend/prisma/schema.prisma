@@ -51,6 +51,11 @@ model ServerSettings {
   customFare          String?  @map("custom_fare") @db.Text
   notifyText          String?  @map("notify_text") @db.Text
   collectMetrics      Boolean? @map("collect_metrics")
+  greetingConfig      Json?    @map("greeting_config")
+  farewellConfig      Json?    @map("farewell_config")
+  loggingConfig       Json?    @map("logging_config")
+  honeypotChannel     BigInt?  @map("honeypot_channel")
+  reactionRoles       Json?    @map("reaction_roles")
 
   @@map("server_settings")
 }

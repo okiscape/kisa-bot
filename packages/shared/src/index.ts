@@ -74,6 +74,29 @@ export interface GuildChannel {
   parentId: string | null;
 }
 
+export interface MessageEmbedConfig {
+  title?: string | null;
+  description?: string | null;
+  color?: string | null;
+  url?: string | null;
+  authorName?: string | null;
+  authorIconUrl?: string | null;
+  authorUrl?: string | null;
+  footerText?: string | null;
+  footerIconUrl?: string | null;
+  thumbnailUrl?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface MessageConfig {
+  enabled: boolean;
+  channelId: string | null;
+  sender: "bot" | "webhook";
+  webhookUrl: string | null;
+  content: string;
+  embeds: MessageEmbedConfig[];
+}
+
 export interface ServerSettings {
   guildId: string;
   averageLanguage: string | null;
@@ -101,6 +124,24 @@ export interface ServerSettings {
   customFare: string | null;
   notifyText: string | null;
   collectMetrics: boolean | null;
+  greetingConfig: MessageConfig;
+  farewellConfig: MessageConfig;
+  loggingConfig: LoggingRule[];
+  honeypotChannel: string | null;
+  reactionRoles: ReactionRole[];
+}
+
+export interface LoggingRule {
+  channelId: string | null;
+  webhookUrl: string | null;
+  eventType: string;
+  ignoreItems: string[];
+}
+
+export interface ReactionRole {
+  emoji: string;
+  roleId: string;
+  messageId: string | null;
 }
 
 export interface UserSettings {

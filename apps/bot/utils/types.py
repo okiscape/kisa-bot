@@ -156,6 +156,8 @@ class ServerSettingsRecord:
         custom_greet: str | None = None,
         custom_fare: str | None = None,
         notify_text: str | None = None,
+        greeting_config: dict | None = None,
+        farewell_config: dict | None = None,
     ):
         self.guild_id = guild_id
         self.average_language = average_language
@@ -184,3 +186,5 @@ class ServerSettingsRecord:
         self.custom_greet = custom_greet
         self.custom_fare = custom_fare
         self.notify_text = notify_text
+        self.greeting_config = greeting_config
+        self.farewell_config = farewell_config

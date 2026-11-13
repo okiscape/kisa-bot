@@ -1,0 +1,90 @@
+.app-chrome {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 1600px;
+	height: 88px;
+	padding: 0 160px;
+	font-family: var(--font-display);
+	flex-shrink: 0;
+	box-sizing: border-box;
+
+	> .wordmark {
+		font-size: 2rem;
+		font-weight: 700;
+		font-style: italic;
+		color: var(--color-text);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	> .right {
+		display: flex;
+		align-items: center;
+		gap: 28px;
+		flex-shrink: 0;
+
+		> .links {
+			display: flex;
+			align-items: center;
+			gap: 28px;
+			color: var(--color-muted);
+			font-size: 1rem;
+
+			> a {
+				transition: color 0.2s ease;
+
+				&:hover {
+					color: var(--color-text);
+				}
+			}
+		}
+
+		> .user-capsule.compact {
+			min-width: 0;
+			height: 56px;
+			padding: 0 18px 0 8px;
+			gap: 12px;
+
+			> .avatar {
+				width: 40px;
+				height: 40px;
+			}
+
+			> .meta > .name {
+				font-size: 0.9375rem;
+			}
+
+			> .meta > .sub {
+				display: none;
+			}
+		}
+	}
+}
+
+@media (max-width: 1280px) {
+	.app-chrome {
+		width: 1280px;
+		padding: 0 80px;
+
+		> .right > .links {
+			display: none;
+		}
+	}
+}
+
+@media (max-width: 900px) {
+	.app-chrome {
+		width: 900px;
+		height: 72px;
+		padding: 0 40px;
+
+		> .wordmark {
+			font-size: 1.625rem;
+		}
+
+		> .right {
+			gap: 16px;
+		}
+	}
+}

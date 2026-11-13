@@ -22,6 +22,11 @@ import {
   SUPPORTED_LANGUAGES,
   defaultGuildSettings,
 } from "./guild-settings.defaults";
+import { normalizeMessageConfig } from "./message-config";
+import {
+  normalizeLoggingConfig,
+  normalizeReactionRoles,
+} from "./logging-config";
 
 const PERMISSIONS = {
   ADMINISTRATOR: 0x8n,
@@ -37,6 +42,7 @@ const CHANNEL_FIELDS = [
   "privateCrChannel",
   "ticketCategory",
   "privateCategory",
+  "honeypotChannel",
 ] as const;
 
 const ROLE_FIELDS = [
@@ -74,6 +80,7 @@ const bigIntFields = [
   "ticketCategory",
   "privateCrChannel",
   "privateCategory",
+  "honeypotChannel",
 ] as const;
 
 @Injectable()
@@ -182,6 +189,21 @@ export class GuildsService {
     const processed: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(dto)) {
       if (value === undefined) continue;
+      if (key === "greetingConfig" || key === "farewellConfig") {
+        processed[key] =
+          value === null ? null : normalizeMessageConfig(value);
+        continue;
+      }
+      if (key === "loggingConfig") {
+        processed[key] =
+          value === null ? null : normalizeLoggingConfig(value);
+        continue;
+      }
+      if (key === "reactionRoles") {
+        processed[key] =
+          value === null ? null : normalizeReactionRoles(value);
+        continue;
+      }
       if (
         (bigIntFields as readonly string[]).includes(key) &&
         value !== null
@@ -190,6 +212,32 @@ export class GuildsService {
       } else {
         processed[key] = value;
       }
+    }
+
+    // Mirror channel picks into legacy flat columns for dual-read / older bots.
+    if (dto.greetingConfig !== undefined) {
+      const cfg =
+        dto.greetingConfig === null
+          ? null
+          : normalizeMessageConfig(dto.greetingConfig);
+      processed.joinChannel =
+        cfg?.enabled && cfg.channelId ? BigInt(cfg.channelId) : null;
+    }
+    if (dto.farewellConfig !== undefined) {
+      const cfg =
+        dto.farewellConfig === null
+          ? null
+          : normalizeMessageConfig(dto.farewellConfig);
+      processed.leaveChannel =
+        cfg?.enabled && cfg.channelId ? BigInt(cfg.channelId) : null;
+    }
+    if (dto.loggingConfig !== undefined) {
+      const rules =
+        dto.loggingConfig === null
+          ? []
+          : normalizeLoggingConfig(dto.loggingConfig) ?? [];
+      const primary = rules.find((r) => r.channelId)?.channelId ?? null;
+      processed.logChannel = primary ? BigInt(primary) : null;
     }
 
     await this.prisma.serverSettings.upsert({
@@ -256,9 +304,25 @@ export class GuildsService {
     const channelIds = CHANNEL_FIELDS.map((f) => dto[f]).filter(
       (v): v is string => typeof v === "string",
     );
+    if (typeof dto.greetingConfig?.channelId === "string") {
+      channelIds.push(dto.greetingConfig.channelId);
+    }
+    if (typeof dto.farewellConfig?.channelId === "string") {
+      channelIds.push(dto.farewellConfig.channelId);
+    }
+    if (Array.isArray(dto.loggingConfig)) {
+      for (const rule of dto.loggingConfig) {
+        if (typeof rule.channelId === "string") channelIds.push(rule.channelId);
+      }
+    }
     const roleIds = ROLE_FIELDS.map((f) => dto[f]).filter(
       (v): v is string => typeof v === "string",
     );
+    if (Array.isArray(dto.reactionRoles)) {
+      for (const rule of dto.reactionRoles) {
+        if (typeof rule.roleId === "string") roleIds.push(rule.roleId);
+      }
+    }
 
     if (channelIds.length === 0 && roleIds.length === 0) return;
 
@@ -271,6 +335,18 @@ export class GuildsService {
 
     for (const field of CHANNEL_FIELDS) {
       const value = dto[field];
+      if (typeof value === "string" && !channelSet.has(value)) {
+        throw new BadRequestException({
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: `${field} is not a channel in this guild`,
+          details: { field, value },
+        });
+      }
+    }
+    for (const [field, value] of [
+      ["greetingConfig.channelId", dto.greetingConfig?.channelId],
+      ["farewellConfig.channelId", dto.farewellConfig?.channelId],
+    ] as const) {
       if (typeof value === "string" && !channelSet.has(value)) {
         throw new BadRequestException({
           code: ErrorCodes.VALIDATION_ERROR,

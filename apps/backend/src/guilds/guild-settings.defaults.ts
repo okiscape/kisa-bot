@@ -1,4 +1,21 @@
 import { ServerSettings as PrismaServerSettings } from "@prisma/client";
+import {
+  emptyMessageConfig,
+  MessageConfig,
+  normalizeMessageConfig,
+  synthesizeFarewellConfig,
+  synthesizeGreetingConfig,
+} from "./message-config";
+import {
+  LoggingRule,
+  normalizeLoggingConfig,
+  normalizeReactionRoles,
+  ReactionRole,
+  synthesizeLoggingConfig,
+} from "./logging-config";
+
+export type { MessageConfig } from "./message-config";
+export type { LoggingRule, ReactionRole } from "./logging-config";
 
 export type GuildSettingsDto = {
   guildId: string;
@@ -27,6 +44,11 @@ export type GuildSettingsDto = {
   customFare: string | null;
   notifyText: string | null;
   collectMetrics: boolean | null;
+  greetingConfig: MessageConfig;
+  farewellConfig: MessageConfig;
+  loggingConfig: LoggingRule[];
+  honeypotChannel: string | null;
+  reactionRoles: ReactionRole[];
 };
 
 export const SUPPORTED_LANGUAGES = ["en", "en_US", "ru"] as const;
@@ -66,6 +88,11 @@ export function defaultGuildSettings(guildId: string): GuildSettingsDto {
     customFare: null,
     notifyText: null,
     collectMetrics: null,
+    greetingConfig: emptyMessageConfig(),
+    farewellConfig: emptyMessageConfig(),
+    loggingConfig: [],
+    honeypotChannel: null,
+    reactionRoles: [],
   };
 }
 
@@ -81,6 +108,17 @@ export function mergeGuildSettings(
   const defaults = defaultGuildSettings(guildId);
   if (!row) return defaults;
 
+  const joinChannel = snowflake(row.joinChannel);
+  const leaveChannel = snowflake(row.leaveChannel);
+  const greetText = row.greetText ?? defaults.greetText;
+  const greetColor = row.greetColor ?? defaults.greetColor;
+  const greetImage = row.greetImage ?? defaults.greetImage;
+  const customGreet = row.customGreet ?? defaults.customGreet;
+  const fareText = row.fareText ?? defaults.fareText;
+  const fareColor = row.fareColor ?? defaults.fareColor;
+  const fareImage = row.fareImage ?? defaults.fareImage;
+  const customFare = row.customFare ?? defaults.customFare;
+
   return {
     guildId,
     averageLanguage: row.averageLanguage ?? defaults.averageLanguage,
@@ -88,25 +126,48 @@ export function mergeGuildSettings(
     notifiedModerators: row.notifiedModerators ?? defaults.notifiedModerators,
     notifyChannel: snowflake(row.notifyChannel),
     badWordsAction: row.badWordsAction ?? defaults.badWordsAction,
-    joinChannel: snowflake(row.joinChannel),
-    leaveChannel: snowflake(row.leaveChannel),
+    joinChannel,
+    leaveChannel,
     postChannel: snowflake(row.postChannel),
     muteRole: snowflake(row.muteRole),
     autoRole: snowflake(row.autoRole),
     logChannel: snowflake(row.logChannel),
     verifiedRole: snowflake(row.verifiedRole),
     ticketCategory: snowflake(row.ticketCategory),
-    fareText: row.fareText ?? defaults.fareText,
-    fareColor: row.fareColor ?? defaults.fareColor,
-    fareImage: row.fareImage ?? defaults.fareImage,
-    greetText: row.greetText ?? defaults.greetText,
-    greetColor: row.greetColor ?? defaults.greetColor,
-    greetImage: row.greetImage ?? defaults.greetImage,
+    fareText,
+    fareColor,
+    fareImage,
+    greetText,
+    greetColor,
+    greetImage,
     privateCrChannel: snowflake(row.privateCrChannel),
     privateCategory: snowflake(row.privateCategory),
-    customGreet: row.customGreet ?? defaults.customGreet,
-    customFare: row.customFare ?? defaults.customFare,
+    customGreet,
+    customFare,
     notifyText: row.notifyText ?? defaults.notifyText,
     collectMetrics: row.collectMetrics ?? defaults.collectMetrics,
+    greetingConfig:
+      normalizeMessageConfig(row.greetingConfig) ??
+      synthesizeGreetingConfig({
+        joinChannel,
+        greetText,
+        greetColor,
+        greetImage,
+        customGreet,
+      }),
+    farewellConfig:
+      normalizeMessageConfig(row.farewellConfig) ??
+      synthesizeFarewellConfig({
+        leaveChannel,
+        fareText,
+        fareColor,
+        fareImage,
+        customFare,
+      }),
+    loggingConfig:
+      normalizeLoggingConfig(row.loggingConfig) ??
+      synthesizeLoggingConfig(snowflake(row.logChannel)),
+    honeypotChannel: snowflake(row.honeypotChannel),
+    reactionRoles: normalizeReactionRoles(row.reactionRoles) ?? [],
   };
 }
