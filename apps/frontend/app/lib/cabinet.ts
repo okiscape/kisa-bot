@@ -47,11 +47,15 @@ export type IntegrationStatus = {
 		username: string | null
 		userId: string | null
 		configured: boolean
+		pp: number | null
+		globalRank: number | null
 	}
 	lastfm: {
 		linked: boolean
 		username: string | null
 		configured: boolean
+		scrobbles: number | null
+		topArtistWeek: string | null
 	}
 }
 

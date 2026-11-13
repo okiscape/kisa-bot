@@ -19,6 +19,16 @@ const ERROR_COPY: Record<string, string> = {
 	not_authenticated: "Log in with Discord before linking accounts.",
 }
 
+function formatNumber(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value)) return "—"
+	return Math.round(value).toLocaleString("en-US")
+}
+
+function formatRank(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value)) return "—"
+	return `#${Math.round(value).toLocaleString("en-US")}`
+}
+
 function IntegrationsContent() {
 	const params = useSearchParams()
 	const [status, setStatus] = useState<IntegrationStatus | null>(null)
@@ -46,11 +56,7 @@ function IntegrationsContent() {
 			return
 		}
 		if (params.get("osu") === "linked") {
-			setNotice("osu! account linked.")
 			return
-		}
-		if (params.get("lastfm") === "linked") {
-			setNotice("Last.fm account linked.")
 		}
 	}, [params])
 
@@ -62,7 +68,6 @@ function IntegrationsContent() {
 				provider === "osu" ? "/auth/osu/link" : "/auth/lastfm/link"
 			const next = await apiFetch<IntegrationStatus>(path, { method: "DELETE" })
 			setStatus(next)
-			setNotice(provider === "osu" ? "osu! unlinked." : "Last.fm unlinked.")
 		} catch {
 			setNotice("Could not unlink account.")
 		} finally {
@@ -89,68 +94,146 @@ function IntegrationsContent() {
 			{!status && !error ? <p className="note">Loading…</p> : null}
 
 			{status ? (
-				<ul className="cards">
-					<li className="card">
-						<div className="meta">
-							<strong>osu!</strong>
-							<span>
-								{status.osu.linked
-									? `Linked as ${status.osu.username}`
-									: status.osu.configured
-										? "Not linked"
-										: "OAuth not configured on this server"}
+				<ul className="integration-cards">
+					<li className="integration-card osu">
+						<div className="card-head">
+							<div className="card-meta">
+								<h2 className="card-title">osu!</h2>
+								
+								{status.osu.linked && status.osu.username ? (
+									<p className="connected-as">
+										Connected as {status.osu.username}
+									</p>
+								) : !status.osu.configured ? (
+									<p className="connected-as">
+										OAuth not configured on this server
+									</p>
+								) : null}
+							</div>
+
+							<span
+								className={
+									status.osu.linked ? "status-tip on" : "status-tip off"
+								}
+							>
+								{status.osu.linked ? "Connected" : "Off"}
 							</span>
 						</div>
-						<div className="actions">
+
+
+						{status.osu.linked ? (
+							<>
+								<div className="divider" aria-hidden="true" />
+								<div className="stats">
+									<div className="stat">
+										<span className="value">
+											{status.osu.username ?? "—"}
+										</span>
+										<span className="label">Username</span>
+									</div>
+									<div className="stat">
+										<span className="value">{formatNumber(status.osu.pp)}</span>
+										<span className="label">pp</span>
+									</div>
+									<div className="stat">
+										<span className="value">
+											{formatRank(status.osu.globalRank)}
+										</span>
+										<span className="label">Leaderboard</span>
+									</div>
+								</div>
+							</>
+						) : null}
+
+						<div className="card-actions">
 							{status.osu.linked ? (
 								<Button
 									variant="ghost"
 									size="md"
 									onClick={() => void unlink("osu")}
+									disabled={busy === "osu"}
 								>
-									{busy === "osu" ? "Unlinking…" : "Unlink"}
+									{busy === "osu" ? "Disconnecting…" : "Disconnect"}
 								</Button>
 							) : (
 								<Button
-									variant="primary"
+									variant="ghost"
 									size="md"
 									onClick={() => link("osu")}
 									disabled={!status.osu.configured || busy === "osu"}
 								>
-									{busy === "osu" ? "Continuing…" : "Link osu!"}
+									{busy === "osu" ? "Continuing…" : "Link osu! account"}
 								</Button>
 							)}
 						</div>
 					</li>
 
-					<li className="card">
-						<div className="meta">
-							<strong>Last.fm</strong>
-							<span>
-								{status.lastfm.linked
-									? `Linked as ${status.lastfm.username}`
-									: status.lastfm.configured
-										? "Not linked"
-										: "OAuth not configured on this server"}
+					<li className="integration-card lastfm">
+						<div className="card-head">
+							<div className="card-meta">
+								<h2 className="card-title">last.fm</h2>
+								{status.lastfm.linked && status.lastfm.username ? (
+									<p className="connected-as">
+										Connected as {status.lastfm.username}
+									</p>
+								) : !status.lastfm.configured ? (
+									<p className="connected-as">
+										OAuth not configured on this server
+									</p>
+								) : null}
+							</div>
+							
+
+							<span
+								className={
+									status.lastfm.linked ? "status-tip on" : "status-tip off"
+								}
+							>
+								{status.lastfm.linked ? "Connected" : "Off"}
 							</span>
 						</div>
-						<div className="actions">
+
+
+						{status.lastfm.linked ? (
+							<>
+								<div className="divider" aria-hidden="true" />
+								<div className="stats">
+									<div className="stat">
+										<span className="value">
+											{formatNumber(status.lastfm.scrobbles)}
+										</span>
+										<span className="label">Scrobbles</span>
+									</div>
+									<div className="stat">
+										<span className="value">
+											{status.lastfm.topArtistWeek ?? "—"}
+										</span>
+										<span className="label">Top artist · week</span>
+									</div>
+								</div>
+							</>
+						) : null}
+
+						<div className="card-actions">
 							{status.lastfm.linked ? (
 								<Button
 									variant="ghost"
 									size="md"
 									onClick={() => void unlink("lastfm")}
+									disabled={busy === "lastfm"}
 								>
-									{busy === "lastfm" ? "Unlinking…" : "Unlink"}
+									{busy === "lastfm" ? "Disconnecting…" : "Disconnect"}
 								</Button>
 							) : (
 								<Button
-									variant="primary"
+									variant="ghost"
 									size="md"
 									onClick={() => link("lastfm")}
 									disabled={!status.lastfm.configured || busy === "lastfm"}
 								>
-									{busy === "lastfm" ? "Continuing…" : "Link Last.fm"}
+									{busy === "lastfm"
+										? "Continuing…"
+										: "Link last.fm account"}
 								</Button>
 							)}
 						</div>

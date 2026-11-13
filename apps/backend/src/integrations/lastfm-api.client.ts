@@ -12,6 +12,11 @@ export type LastfmSession = {
   sessionKey: string;
 };
 
+export type LastfmUserStats = {
+  scrobbles: number | null;
+  topArtistWeek: string | null;
+};
+
 @Injectable()
 export class LastfmApiClient {
   private readonly logger = new Logger(LastfmApiClient.name);
@@ -94,6 +99,69 @@ export class LastfmApiClient {
       username: json.session.name,
       sessionKey: json.session.key,
     };
+  }
+
+  async getUserStats(username: string): Promise<LastfmUserStats> {
+    this.assertConfigured();
+    const [scrobbles, topArtistWeek] = await Promise.all([
+      this.getPlaycount(username),
+      this.getTopArtistWeek(username),
+    ]);
+    return { scrobbles, topArtistWeek };
+  }
+
+  private async getPlaycount(username: string): Promise<number | null> {
+    const json = await this.callApi<{
+      user?: { playcount?: string };
+    }>({
+      method: "user.getInfo",
+      user: username,
+    });
+    const raw = json.user?.playcount;
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private async getTopArtistWeek(username: string): Promise<string | null> {
+    const json = await this.callApi<{
+      topartists?: { artist?: Array<{ name?: string }> | { name?: string } };
+    }>({
+      method: "user.getTopArtists",
+      user: username,
+      period: "7day",
+      limit: "1",
+    });
+    const artist = json.topartists?.artist;
+    if (!artist) return null;
+    if (Array.isArray(artist)) return artist[0]?.name ?? null;
+    return artist.name ?? null;
+  }
+
+  private async callApi<T>(
+    params: Record<string, string>,
+  ): Promise<T> {
+    const apiKey = this.config.getOrThrow<string>("lastfm.apiKey");
+    const url = new URL("https://ws.audioscrobbler.com/2.0/");
+    url.searchParams.set("api_key", apiKey);
+    url.searchParams.set("format", "json");
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      this.logger.warn(
+        `last.fm ${params.method} failed (${res.status}): ${text}`,
+      );
+      throw new Error("lastfm_api_failed");
+    }
+
+    return (await res.json()) as T;
   }
 
   /** Last.fm api_sig = md5(sorted key+value pairs + secret). */

@@ -1,38 +1,169 @@
-.dashboard > .servers > .main > .cards {
+.dashboard > .servers > .main > .integration-cards {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
+	justify-content: space-between;
+	gap: 20px;
 
-	> .card {
+	> .integration-card {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		width: 50%;
+		border: 1px solid var(--color-border);
+		border-radius: 24px;
+		padding: 28px 28px 24px;
 		display: flex;
-		align-items: center;
+		flex-direction: column;
 		justify-content: space-between;
-		gap: 20px;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--color-border);
+		gap: 0;
 
-		> .meta {
-			min-width: 0;
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0 0 auto;
+			height: 180px;
+			pointer-events: none;
+			z-index: -1;
+			opacity: 0.9;
+		}
+
+		&.osu::before {
+			background: linear-gradient(
+				180deg,
+				rgba(255, 102, 170, 0.45) 0%,
+				rgba(255, 102, 170, 0.12) 45%,
+				transparent 100%
+			);
+		}
+
+		&.lastfm::before {
+			background: linear-gradient(
+				180deg,
+				rgba(220, 40, 40, 0.48) 0%,
+				rgba(220, 40, 40, 0.14) 45%,
+				transparent 100%
+			);
+		}
+
+		> .card-head {
 			display: flex;
-			flex-direction: column;
-			gap: 6px;
+			align-items: center;
+			justify-content: space-between;
 
-			> strong {
-				font-family: var(--font-display);
-				font-size: 1.25rem;
+			> .card-meta {
+				display: flex; flex-direction: column;
+				> .card-title {
+					margin: 0;
+					font-family: var(--font-display);
+					font-size: 1.75rem;
+					font-weight: 700;
+					letter-spacing: -0.02em;
+					line-height: 1.1;
+				}
+
+				> .connected-as {
+					margin: 8px 0 0;
+					font-family: var(--font-body);
+					font-size: 0.9375rem;
+					color: var(--color-text);
+					opacity: 0.55;
+				}
 			}
 
-			> span {
-				font-family: var(--font-body);
-				font-size: 0.9375rem;
-				color: var(--color-muted);
+			> .status-tip {
+				flex-shrink: 0;
+				display: inline-flex;
+				align-items: center;
+				height: 28px;
+				padding: 20px 14px;
+				border-radius: 500px;
+				border-width: 1.5px;
+				border-style: solid;
+				font-family: var(--font-display);
+				font-size: 1.2rem;
+				font-weight: 600;
+				letter-spacing: 0.02em;
+
+				&.on {
+					background: #00000099;
+				}
+
+				&.off {
+					color: #ffffff99;
+					background: #00000099;
+					border-style: dashed;
+					border-color: #ffffff55;
+				}
 			}
 		}
 
-		> .actions {
-			flex-shrink: 0;
+
+		> .divider {
+			margin: 20px 0;
+			height: 1px;
+			width: 100%;
+			background: var(--color-border);
+			opacity: 0.85;
+		}
+
+		> .stats {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 28px 40px;
+
+			> .stat {
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+				min-width: 0;
+
+				> .value {
+					font-family: var(--font-display);
+					font-size: 1.25rem;
+					font-weight: 700;
+					line-height: 1.2;
+					color: var(--color-text);
+					overflow-wrap: anywhere;
+				}
+
+				> .label {
+					font-family: var(--font-body);
+					font-size: 0.8125rem;
+					color: var(--color-text);
+					opacity: 0.45;
+				}
+			}
+		}
+
+		> .card-actions {
+			margin-top: 24px;
+			display: flex;
+			align-items: center;
+		}
+
+		&:not(:has(> .stats)) > .card-actions {
+			margin-top: 20px;
+		}
+	}
+}
+
+@media (max-width: 720px) {
+	.dashboard > .servers > .main > .integration-cards > .integration-card {
+		padding: 22px 20px 20px;
+
+		> .card-head > .card-title {
+			font-size: 1.5rem;
+		}
+
+		> .stats {
+			gap: 18px 28px;
+
+			> .stat > .value {
+				font-size: 1.125rem;
+			}
 		}
 	}
 }

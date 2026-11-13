@@ -76,6 +76,9 @@ services:
                 condition: service_healthy
         ports:
             - "${BACKEND_PORT}:${BACKEND_PORT}"
+        networks:
+            - default
+            - proxy
 
     frontend:
         image: ghcr.io/okiscape/kisa-frontend:latest
@@ -93,6 +96,9 @@ services:
             - backend
         ports:
             - "${FRONTEND_PORT:-3000}:3000"
+        networks:
+            - default
+            - proxy
 
     watchtower:
         image: containrrr/watchtower
@@ -107,3 +113,8 @@ services:
 
 volumes:
     pgdata:
+
+networks:
+    proxy:
+        name: shared-proxy
+        external: true

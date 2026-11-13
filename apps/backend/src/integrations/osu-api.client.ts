@@ -18,6 +18,8 @@ export type OsuUser = {
   username: string;
   avatarUrl: string | null;
   countryCode: string | null;
+  pp: number | null;
+  globalRank: number | null;
 };
 
 @Injectable()
@@ -100,6 +102,46 @@ export class OsuApiClient {
     };
   }
 
+  async refreshAccessToken(refreshToken: string): Promise<OsuTokenResponse> {
+    this.assertConfigured();
+    const body = new URLSearchParams({
+      client_id: this.config.getOrThrow<string>("osu.clientId"),
+      client_secret: this.config.getOrThrow<string>("osu.clientSecret"),
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      scope: "identify public",
+    });
+
+    const res = await fetch("https://osu.ppy.sh/oauth/token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      this.logger.warn(`osu token refresh failed (${res.status}): ${text}`);
+      throw new Error("osu_token_refresh_failed");
+    }
+
+    const json = (await res.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in: number;
+      token_type: string;
+    };
+
+    return {
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token ?? refreshToken,
+      expiresIn: json.expires_in,
+      tokenType: json.token_type,
+    };
+  }
+
   async getMe(accessToken: string): Promise<OsuUser> {
     const res = await fetch("https://osu.ppy.sh/api/v2/me", {
       headers: {
@@ -119,6 +161,10 @@ export class OsuApiClient {
       username: string;
       avatar_url?: string;
       country_code?: string;
+      statistics?: {
+        pp?: number | null;
+        global_rank?: number | null;
+      };
     };
 
     return {
@@ -126,6 +172,8 @@ export class OsuApiClient {
       username: json.username,
       avatarUrl: json.avatar_url ?? null,
       countryCode: json.country_code ?? null,
+      pp: json.statistics?.pp ?? null,
+      globalRank: json.statistics?.global_rank ?? null,
     };
   }
 }
