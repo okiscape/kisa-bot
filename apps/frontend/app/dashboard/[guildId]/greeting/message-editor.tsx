@@ -286,9 +286,7 @@ export default function MessageEditor({
 							) : null}
 							{embed.imageUrl ? (
 								<img className="embed-image" src={embed.imageUrl} alt="" />
-							) : (
-								<div className="embed-image placeholder" />
-							)}
+							) : null}
 						</div>
 					) : null}
 				</div>
