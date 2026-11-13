@@ -1,5 +1,7 @@
 .dashboard {
-	width: 1600px;
+	--dash-left: 280px;
+	--dash-right: 320px;
+	width: 1900px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -8,6 +10,10 @@
 	color: var(--color-text);
 	flex-shrink: 0;
 
+	> .app-chrome {
+		width: 1900px;
+	}
+
 	> .loading {
 		padding: 80px 160px;
 		color: var(--color-muted);
@@ -15,9 +21,9 @@
 	}
 
 	> .servers {
-		width: 1600px;
+		width: 1900px;
 		display: grid;
-		grid-template-columns: 280px 1fr;
+		grid-template-columns: var(--dash-left) minmax(0, 1fr);
 		gap: 48px;
 		padding: 24px 160px 80px;
 		box-sizing: border-box;
@@ -118,11 +124,18 @@
 					}
 				}
 
-				> .logout {
-					align-self: flex-start;
+				> .item.logout {
+					margin-top: 12px;
+					background: none;
+					border: 0;
 					color: #f87171;
-					font-family: var(--font-display);
 					cursor: pointer;
+					opacity: 1;
+					font-weight: 400;
+
+					&:hover {
+						color: #fca5a5;
+					}
 				}
 			}
 		}
@@ -280,9 +293,29 @@
 	}
 }
 
+@media (max-width: 1600px) {
+	.dashboard {
+		width: 1600px;
+
+		> .app-chrome {
+			width: 1600px;
+		}
+
+		> .servers {
+			width: 1600px;
+			padding: 16px 80px 64px;
+		}
+	}
+}
+
 @media (max-width: 1280px) {
 	.dashboard {
 		width: 1280px;
+
+		> .app-chrome {
+			width: 1280px;
+			padding: 0 80px;
+		}
 
 		> .servers {
 			width: 1280px;
@@ -325,6 +358,11 @@
 @media (max-width: 900px) {
 	.dashboard {
 		width: 900px;
+
+		> .app-chrome {
+			width: 900px;
+			padding: 0 40px;
+		}
 
 		> .loading {
 			padding: 64px 40px;

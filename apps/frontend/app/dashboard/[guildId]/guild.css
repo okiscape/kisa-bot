@@ -1,7 +1,7 @@
 .guild {
-	width: 1600px;
+	width: 1900px;
 	display: grid;
-	grid-template-columns: 280px 1fr;
+	grid-template-columns: var(--dash-left, 280px) minmax(0, 1fr);
 	gap: 48px;
 	padding: 12px 160px 80px;
 	box-sizing: border-box;
@@ -171,7 +171,7 @@
 	}
 
 	> .form {
-		width: 800px;
+		width: 100%;
 		min-width: 0;
 
 		> .webhook-input,
@@ -208,6 +208,13 @@
 			font-family: var(--font-display);
 			cursor: pointer;
 		}
+	}
+}
+
+@media (max-width: 1600px) {
+	.guild {
+		width: 1600px;
+		padding: 8px 80px 64px;
 	}
 }
 

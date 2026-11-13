@@ -1,14 +1,12 @@
 .dashboard > .servers > .main > .profile-page {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 420px;
+	display: flex;
 	gap: 40px;
-	align-items: start;
 
 	> .editor {
 		display: flex;
 		flex-direction: column;
 		gap: 28px;
-		min-width: 0;
+		min-width: 60%;
 
 		> .hero {
 			> .title {
@@ -96,6 +94,7 @@
 					height: 44px;
 					border-radius: 50%;
 					background: radial-gradient(circle at 30% 30%, #ffb36b, #5a2d12);
+					object-fit: cover;
 					flex-shrink: 0;
 				}
 

@@ -137,6 +137,17 @@ export class DiscordApiClient {
     return res.json() as Promise<DiscordApiUser>;
   }
 
+  async getBotUser(): Promise<DiscordApiUser> {
+    const res = await this.request("/users/@me", {
+      token: this.discordConfig("botToken"),
+      tokenKind: "Bot",
+    });
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to fetch Discord bot user");
+    }
+    return res.json() as Promise<DiscordApiUser>;
+  }
+
   async getUserById(userId: string): Promise<DiscordApiUser | null> {
     const res = await this.request(`/users/${userId}`, {
       token: this.discordConfig("botToken"),

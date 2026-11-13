@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import BotAvatar from "@/components/bot-avatar"
 import Switch from "@/components/switch"
 import SettingsSaveBar from "@/components/settings-save-bar"
 import {
@@ -259,7 +260,7 @@ export default function MessageEditor({
 				</div>
 				<div className="discord-msg">
 					<div className="msg-head">
-						<span className="bot-avatar" />
+						<BotAvatar />
 						<div>
 							<div className="name-row">
 								<strong>kisa</strong>

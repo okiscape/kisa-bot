@@ -1,5 +1,6 @@
 "use client"
 
+import BotAvatar from "@/components/bot-avatar"
 import {
 	colorToCss,
 	type DiscordProfileDto,
@@ -67,7 +68,7 @@ export default function UserPreview({
 
 			<div className="discord-msg">
 				<div className="msg-head">
-					<span className="bot-avatar" aria-hidden />
+					<BotAvatar />
 					<div>
 						<div className="name-row">
 							<strong>kisa</strong>
