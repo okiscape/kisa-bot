@@ -10,6 +10,7 @@ import { DiscordModule } from "./discord/discord.module";
 import { AuthModule } from "./auth/auth.module";
 import { GuildsModule } from "./guilds/guilds.module";
 import { UsersModule } from "./users/users.module";
+import { IntegrationsModule } from "./integrations/integrations.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { HealthModule } from "./health/health.module";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
@@ -40,6 +41,7 @@ import { CsrfGuard } from "./auth/guards/csrf.guard";
     AuthModule,
     GuildsModule,
     UsersModule,
+    IntegrationsModule,
     MetricsModule,
     HealthModule,
   ],

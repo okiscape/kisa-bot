@@ -27,6 +27,8 @@ import { CsrfGuard } from "./guards/csrf.guard";
     SessionGuard,
     GuildAdminGuard,
     CsrfGuard,
+    OauthStateService,
+    TokenCryptoService,
   ],
 })
 export class AuthModule {}

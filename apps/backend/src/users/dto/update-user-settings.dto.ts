@@ -7,24 +7,18 @@ import {
   ValidateIf,
 } from "class-validator";
 
-/** Loose IANA-ish timezone: Area/Location or UTC±offset. */
+/** Bot-compatible UTC offsets (UTC, UTC±1 … UTC±12) or loose IANA ids. */
 const TIMEZONE =
-  /^(UTC|[A-Za-z]+\/[A-Za-z0-9_+\-]+(?:\/[A-Za-z0-9_+\-]+)?)$/;
-
-const OSU_USERNAME = /^[A-Za-z0-9_\-\[\] ]{2,32}$/;
+  /^(UTC([+-](1[0-2]|[0-9]))?|[A-Za-z]+\/[A-Za-z0-9_+\-]+(?:\/[A-Za-z0-9_+\-]+)?)$/;
 
 export class UpdateUserSettingsDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined)
-  @Matches(TIMEZONE, { message: "timezone must be an IANA timezone id" })
-  timezone?: string | null;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined)
-  @Matches(OSU_USERNAME, {
-    message: "osuUsername must be 2-32 chars (letters, numbers, _ - [ ] space)",
+  @ApiPropertyOptional({
+    description: "UTC offset string used by the bot (e.g. UTC+3) or IANA id",
   })
-  osuUsername?: string | null;
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @Matches(TIMEZONE, {
+    message: "timezone must be UTC, UTC±N, or an IANA timezone id",
+  })
+  timezone?: string | null;
 }

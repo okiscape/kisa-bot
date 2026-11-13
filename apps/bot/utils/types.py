@@ -100,10 +100,35 @@ class SocialRatingRecord:
 
 
 class UserSettingsRecord:
-    def __init__(self, user_id: int, timezone: str | None, osu_username: str | None):
+    def __init__(
+        self,
+        user_id: int,
+        timezone: str | None,
+        osu_username: str | None,
+        osu_user_id: int | None = None,
+        osu_access_token_encrypted: str | None = None,
+        osu_refresh_token_encrypted: str | None = None,
+        osu_token_expires_at=None,
+        lastfm_username: str | None = None,
+        lastfm_session_key_encrypted: str | None = None,
+    ):
         self.user_id = user_id
         self.timezone = timezone
         self.osu_username = osu_username
+        self.osu_user_id = osu_user_id
+        self.osu_access_token_encrypted = osu_access_token_encrypted
+        self.osu_refresh_token_encrypted = osu_refresh_token_encrypted
+        self.osu_token_expires_at = osu_token_expires_at
+        self.lastfm_username = lastfm_username
+        self.lastfm_session_key_encrypted = lastfm_session_key_encrypted
+
+    @property
+    def osu_linked(self) -> bool:
+        return bool(self.osu_username and self.osu_access_token_encrypted)
+
+    @property
+    def lastfm_linked(self) -> bool:
+        return bool(self.lastfm_username and self.lastfm_session_key_encrypted)
 
 
 class UserProfileRecord:

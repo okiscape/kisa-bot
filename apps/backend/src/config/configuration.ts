@@ -29,6 +29,20 @@ export default () => {
       botPermissions:
         process.env.DISCORD_BOT_PERMISSIONS || "285280256824",
     },
+    osu: {
+      clientId: process.env.OSU_CLIENT_ID || "",
+      clientSecret: process.env.OSU_CLIENT_SECRET || "",
+      redirectUri:
+        process.env.OSU_REDIRECT_URI ||
+        "http://localhost:3001/api/auth/osu/callback",
+    },
+    lastfm: {
+      apiKey: process.env.LASTFM_API_KEY || "",
+      apiSecret: process.env.LASTFM_API_SECRET || "",
+      redirectUri:
+        process.env.LASTFM_REDIRECT_URI ||
+        "http://localhost:3001/api/auth/lastfm/callback",
+    },
     redis: {
       url: process.env.REDIS_URL || "",
     },

@@ -9,6 +9,14 @@ export function discordLoginUrl(): string {
 	return `${getBackendUrl()}/auth/discord/login`
 }
 
+export function osuLinkUrl(): string {
+	return `${getBackendUrl()}/auth/osu/login`
+}
+
+export function lastfmLinkUrl(): string {
+	return `${getBackendUrl()}/auth/lastfm/login`
+}
+
 type Envelope<T> = {
 	data: T
 	meta?: { requestId?: string }

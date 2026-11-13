@@ -8,9 +8,15 @@ datasource db {
 }
 
 model UserSettings {
-  userId      BigInt  @id @map("user_id")
-  timezone    String? @db.Text
-  osuUsername  String? @map("osu_username") @db.Text
+  userId                     BigInt    @id @map("user_id")
+  timezone                   String?   @db.Text
+  osuUsername                String?   @map("osu_username") @db.Text
+  osuUserId                  BigInt?   @map("osu_user_id")
+  osuAccessTokenEncrypted    String?   @map("osu_access_token_encrypted") @db.Text
+  osuRefreshTokenEncrypted   String?   @map("osu_refresh_token_encrypted") @db.Text
+  osuTokenExpiresAt          DateTime? @map("osu_token_expires_at") @db.Timestamptz(6)
+  lastfmUsername             String?   @map("lastfm_username") @db.Text
+  lastfmSessionKeyEncrypted  String?   @map("lastfm_session_key_encrypted") @db.Text
 
   @@map("user_settings")
 }

@@ -13,6 +13,7 @@ type Props = {
 	className?: string
 	onClick?: () => void
 	type?: "button" | "submit"
+	disabled?: boolean
 }
 
 export default function Button({
@@ -23,10 +24,11 @@ export default function Button({
 	className,
 	onClick,
 	type = "button",
+	disabled = false,
 }: Props) {
-	const classes = clsx("button", variant, size, className)
+	const classes = clsx("button", variant, size, className, disabled && "disabled")
 
-	if (href) {
+	if (href && !disabled) {
 		const external =
 			href.startsWith("http") ||
 			href.startsWith("/login") ||
@@ -47,7 +49,7 @@ export default function Button({
 	}
 
 	return (
-		<button className={classes} type={type} onClick={onClick}>
+		<button className={classes} type={type} onClick={onClick} disabled={disabled}>
 			{children}
 		</button>
 	)

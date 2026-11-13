@@ -43,9 +43,19 @@ export class UsersService {
     dto: UpdateUserProfileDto,
   ): Promise<UserProfileDto> {
     const patch: Record<string, string | null> = {};
-    if (dto.aboutMe !== undefined) patch.aboutMe = dto.aboutMe;
-    if (dto.color !== undefined) patch.color = dto.color;
-    if (dto.customImage !== undefined) patch.customImage = dto.customImage;
+    if (dto.aboutMe !== undefined) {
+      patch.aboutMe = dto.aboutMe?.trim() ? dto.aboutMe.trim() : null;
+    }
+    if (dto.color !== undefined) {
+      if (dto.color === null || dto.color === "") {
+        patch.color = null;
+      } else {
+        patch.color = dto.color.replace(/^#/, "").toLowerCase();
+      }
+    }
+    if (dto.customImage !== undefined) {
+      patch.customImage = dto.customImage?.trim() ? dto.customImage.trim() : null;
+    }
 
     await this.prisma.userProfile.upsert({
       where: { userId: BigInt(userId) },
@@ -84,7 +94,6 @@ export class UsersService {
   ): Promise<UserSettingsDto> {
     const patch: Record<string, string | null> = {};
     if (dto.timezone !== undefined) patch.timezone = dto.timezone;
-    if (dto.osuUsername !== undefined) patch.osuUsername = dto.osuUsername;
 
     await this.prisma.userSettings.upsert({
       where: { userId: BigInt(userId) },

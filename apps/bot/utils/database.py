@@ -19,6 +19,12 @@ db_schema = {
         "user_id": "BIGINT PRIMARY KEY",
         "timezone": "TEXT",
         "osu_username": "TEXT",
+        "osu_user_id": "BIGINT",
+        "osu_access_token_encrypted": "TEXT",
+        "osu_refresh_token_encrypted": "TEXT",
+        "osu_token_expires_at": "TIMESTAMPTZ",
+        "lastfm_username": "TEXT",
+        "lastfm_session_key_encrypted": "TEXT",
     },
     "user_profiles": {
         "user_id": "BIGINT PRIMARY KEY",
@@ -513,7 +519,17 @@ class DatabaseManager:
         fetch = (
             await self.db.read(
                 table="user_settings",
-                columns=["user_id", "timezone", "osu_username"],
+                columns=[
+                    "user_id",
+                    "timezone",
+                    "osu_username",
+                    "osu_user_id",
+                    "osu_access_token_encrypted",
+                    "osu_refresh_token_encrypted",
+                    "osu_token_expires_at",
+                    "lastfm_username",
+                    "lastfm_session_key_encrypted",
+                ],
                 filters=filters,
             )
         ).fetchall
@@ -522,7 +538,17 @@ class DatabaseManager:
 
         for row in fetch:
             to_return.append(
-                UserSettingsRecord(user_id=row[0], timezone=row[1], osu_username=row[2])
+                UserSettingsRecord(
+                    user_id=row[0],
+                    timezone=row[1],
+                    osu_username=row[2],
+                    osu_user_id=row[3],
+                    osu_access_token_encrypted=row[4],
+                    osu_refresh_token_encrypted=row[5],
+                    osu_token_expires_at=row[6],
+                    lastfm_username=row[7],
+                    lastfm_session_key_encrypted=row[8],
+                )
             )
 
         await self.caches.userSetting.set(_cachekey, to_return)
@@ -530,27 +556,94 @@ class DatabaseManager:
         return to_return
 
     async def createUserSettings(
-        self, user_id: int, timezone: str | None = None, osu_username: str | None = None
+        self,
+        user_id: int,
+        timezone: str | None = None,
+        osu_username: str | None = None,
+        osu_user_id: int | None = None,
+        osu_access_token_encrypted: str | None = None,
+        osu_refresh_token_encrypted: str | None = None,
+        osu_token_expires_at=None,
+        lastfm_username: str | None = None,
+        lastfm_session_key_encrypted: str | None = None,
     ):
         await self.db.create(
             table="user_settings",
             user_id=user_id,
             timezone=timezone,
             osu_username=osu_username,
+            osu_user_id=osu_user_id,
+            osu_access_token_encrypted=osu_access_token_encrypted,
+            osu_refresh_token_encrypted=osu_refresh_token_encrypted,
+            osu_token_expires_at=osu_token_expires_at,
+            lastfm_username=lastfm_username,
+            lastfm_session_key_encrypted=lastfm_session_key_encrypted,
         )
 
     async def updateUserSettings(
-        self, user_id: int, timezone: str = "", osu_username: str = ""
+        self,
+        user_id: int,
+        timezone: str = "",
+        osu_username: str = "",
+        osu_user_id: int | None | object = "",
+        osu_access_token_encrypted: str = "",
+        osu_refresh_token_encrypted: str = "",
+        osu_token_expires_at: object = "",
+        lastfm_username: str = "",
+        lastfm_session_key_encrypted: str = "",
     ):
         updates = {}
         if timezone != "":
             updates["timezone"] = timezone
         if osu_username != "":
             updates["osu_username"] = osu_username
+        if osu_user_id != "":
+            updates["osu_user_id"] = osu_user_id
+        if osu_access_token_encrypted != "":
+            updates["osu_access_token_encrypted"] = osu_access_token_encrypted
+        if osu_refresh_token_encrypted != "":
+            updates["osu_refresh_token_encrypted"] = osu_refresh_token_encrypted
+        if osu_token_expires_at != "":
+            updates["osu_token_expires_at"] = osu_token_expires_at
+        if lastfm_username != "":
+            updates["lastfm_username"] = lastfm_username
+        if lastfm_session_key_encrypted != "":
+            updates["lastfm_session_key_encrypted"] = lastfm_session_key_encrypted
 
         await self.db.update(
             table="user_settings", filters=[Filter("user_id", user_id)], **updates
         )
+
+    async def readOsuLink(self, user_id: int, cacheOverwrite: bool = False):
+        """Return osu link fields for a user, or None when unlinked."""
+        rows = await self.readUserSettings(
+            user_id=user_id, cacheOverwrite=cacheOverwrite
+        )
+        if not rows or not rows[0].osu_linked:
+            return None
+        row = rows[0]
+        return {
+            "user_id": row.user_id,
+            "osu_username": row.osu_username,
+            "osu_user_id": row.osu_user_id,
+            "osu_access_token_encrypted": row.osu_access_token_encrypted,
+            "osu_refresh_token_encrypted": row.osu_refresh_token_encrypted,
+            "osu_token_expires_at": row.osu_token_expires_at,
+        }
+
+    async def readLastfmLink(self, user_id: int, cacheOverwrite: bool = False):
+        """Return Last.fm link fields for a user, or None when unlinked."""
+        rows = await self.readUserSettings(
+            user_id=user_id, cacheOverwrite=cacheOverwrite
+        )
+        if not rows or not rows[0].lastfm_linked:
+            return None
+        row = rows[0]
+        return {
+            "user_id": row.user_id,
+            "lastfm_username": row.lastfm_username,
+            "lastfm_session_key_encrypted": row.lastfm_session_key_encrypted,
+        }
 
     async def readUserProfiles(
         self,

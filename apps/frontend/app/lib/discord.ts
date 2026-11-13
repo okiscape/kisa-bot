@@ -43,6 +43,21 @@ export function discordAvatarUrl(
 	return `https://cdn.discordapp.com/embed/avatars/${index}.png`
 }
 
+export function discordBannerUrl(
+	userId: string,
+	banner: string | null,
+	size = 600,
+): string | null {
+	if (!banner) return null
+	const ext = banner.startsWith("a_") ? "gif" : "png"
+	return `https://cdn.discordapp.com/banners/${userId}/${banner}.${ext}?size=${size}`
+}
+
+export function accentToCss(accent: number | null | undefined): string | null {
+	if (accent == null || !Number.isFinite(accent)) return null
+	return `#${accent.toString(16).padStart(6, "0")}`
+}
+
 export function guildIconUrl(
 	guildId: string,
 	iconHash: string | null | undefined,

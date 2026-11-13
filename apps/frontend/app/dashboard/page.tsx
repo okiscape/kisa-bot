@@ -2,13 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Button from "@/components/button"
+import CabinetShell from "@/components/cabinet-shell"
 import { useAuth } from "@/components/auth-provider"
 import { apiFetch } from "@/lib/api"
-import {
-	displayName,
-	discordAvatarUrl,
-	type GuildDiscoveryItem,
-} from "@/lib/discord"
+import { displayName, type GuildDiscoveryItem } from "@/lib/discord"
 
 type Filter = "all" | "here" | "missing"
 
@@ -19,7 +16,7 @@ const FILTERS = [
 ] as const
 
 export default function DashboardPage() {
-	const { user, logout } = useAuth()
+	const { user } = useAuth()
 	const [guilds, setGuilds] = useState<GuildDiscoveryItem[] | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [query, setQuery] = useState("")
@@ -54,103 +51,73 @@ export default function DashboardPage() {
 	const name = user ? displayName(user) : ""
 
 	return (
-		<main className="servers">
-			<aside className="side" aria-label="Cabinet">
-				{user ? (
-					<div className="user">
-						<img
-							src={discordAvatarUrl(user.id, user.avatar, 64)}
-							alt=""
-							width={48}
-							height={48}
-						/>
-						<div>
-							<strong>{name}</strong>
-							<span>Discord account</span>
-						</div>
-					</div>
-				) : null}
+		<CabinetShell active="servers">
+			<header className="hero">
+				<h1 className="title">Hello, {name}</h1>
+				<p className="lead">Your servers and personal settings in one place.</p>
+			</header>
 
-				<nav className="nav">
-					<span className="item muted">Profile</span>
-					<span className="item muted">Integrations</span>
-					<span className="item muted">Privacy</span>
-					<span className="item active">My servers</span>
-				</nav>
-
-				<button type="button" className="logout" onClick={() => void logout()}>
-					Log out
-				</button>
-			</aside>
-
-			<section className="main">
-				<header className="hero">
-					<h1 className="title">Hello, {name}</h1>
-					<p className="lead">Your servers and personal settings in one place.</p>
-				</header>
-
-				<div className="toolbar">
-					<input
-						className="search"
-						type="search"
-						placeholder="Search servers."
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						aria-label="Search servers"
-					/>
-					<div className="filters" role="group" aria-label="Bot presence filter">
-						{FILTERS.map(([id, label]) => (
-							<button
-								key={id}
-								type="button"
-								className={`filter${filter === id ? " on" : ""}`}
-								onClick={() => setFilter(id)}
-							>
-								{label}
-							</button>
-						))}
-					</div>
-				</div>
-
-				{error ? <p className="note">{error}</p> : null}
-				{guilds === null && !error ? <p className="note">Loading servers…</p> : null}
-
-				<ul className="list">
-					{filtered.map((guild) => (
-						<li key={guild.id} className="row">
-							<div className="identity">
-								{guild.iconUrl ? (
-									<img src={guild.iconUrl} alt="" width={48} height={48} />
-								) : (
-									<span className="fallback">{guild.name.slice(0, 1)}</span>
-								)}
-								<div>
-									<strong>{guild.name}</strong>
-									<span className={`status${guild.hasBot ? "" : " missing"}`}>
-										{guild.hasBot ? "kisa is here" : "Not added"}
-									</span>
-								</div>
-							</div>
-
-							{guild.hasBot ? (
-								<Button href={`/dashboard/${guild.id}/overview`} variant="primary" size="md">
-									Open
-								</Button>
-							) : guild.botInviteUrl ? (
-								<Button href={guild.botInviteUrl} variant="ghost" size="md">
-									Add kisa
-								</Button>
-							) : (
-								<span className="status missing">Invite unavailable</span>
-							)}
-						</li>
+			<div className="toolbar">
+				<input
+					className="search"
+					type="search"
+					placeholder="Search servers."
+					value={query}
+					onChange={(e) => setQuery(e.target.value)}
+					aria-label="Search servers"
+				/>
+				<div className="filters" role="group" aria-label="Bot presence filter">
+					{FILTERS.map(([id, label]) => (
+						<button
+							key={id}
+							type="button"
+							className={`filter${filter === id ? " on" : ""}`}
+							onClick={() => setFilter(id)}
+						>
+							{label}
+						</button>
 					))}
-				</ul>
+				</div>
+			</div>
 
-				{guilds && filtered.length === 0 ? (
-					<p className="note">No servers match this filter.</p>
-				) : null}
-			</section>
-		</main>
+			{error ? <p className="note">{error}</p> : null}
+			{guilds === null && !error ? <p className="note">Loading servers…</p> : null}
+
+			<ul className="list">
+				{filtered.map((guild) => (
+					<li key={guild.id} className="row">
+						<div className="identity">
+							{guild.iconUrl ? (
+								<img src={guild.iconUrl} alt="" width={48} height={48} />
+							) : (
+								<span className="fallback">{guild.name.slice(0, 1)}</span>
+							)}
+							<div>
+								<strong>{guild.name}</strong>
+								<span className={`status${guild.hasBot ? "" : " missing"}`}>
+									{guild.hasBot ? "kisa is here" : "Not added"}
+								</span>
+							</div>
+						</div>
+
+						{guild.hasBot ? (
+							<Button href={`/dashboard/${guild.id}/overview`} variant="primary" size="md">
+								Open
+							</Button>
+						) : guild.botInviteUrl ? (
+							<Button href={guild.botInviteUrl} variant="ghost" size="md">
+								Add kisa
+							</Button>
+						) : (
+							<span className="status missing">Invite unavailable</span>
+						)}
+					</li>
+				))}
+			</ul>
+
+			{guilds && filtered.length === 0 ? (
+				<p className="note">No servers match this filter.</p>
+			) : null}
+		</CabinetShell>
 	)
 }

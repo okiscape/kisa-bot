@@ -157,6 +157,20 @@ export interface UserProfile {
   customImage: string | null;
 }
 
+export interface IntegrationStatus {
+  osu: {
+    linked: boolean;
+    username: string | null;
+    userId: string | null;
+    configured: boolean;
+  };
+  lastfm: {
+    linked: boolean;
+    username: string | null;
+    configured: boolean;
+  };
+}
+
 export interface PublicUserProfile {
   id: string;
   username: string | null;
