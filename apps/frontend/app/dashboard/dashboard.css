@@ -1,34 +1,42 @@
 .dashboard {
 	--dash-left: 280px;
-	--dash-right: 320px;
-	width: 1900px;
+	--dash-right: 400px;
+	--dash-pad-x: clamp(40px, 8vw, 160px);
+	width: 100%;
+	max-width: 1920px;
+	margin: 0 auto;
 	display: flex;
 	flex-direction: column;
-	align-items: center;
+	align-items: stretch;
 	min-height: 100vh;
 	background: var(--color-bg);
 	color: var(--color-text);
-	flex-shrink: 0;
 
 	> .app-chrome {
-		width: 1900px;
+		width: 100%;
+		max-width: none;
+		padding-left: var(--dash-pad-x);
+		padding-right: var(--dash-pad-x);
 	}
 
 	> .loading {
-		padding: 80px 160px;
+		padding: 80px var(--dash-pad-x);
 		color: var(--color-muted);
 		font-family: var(--font-display);
 	}
 
 	> .servers {
-		width: 1900px;
-		display: grid;
-		grid-template-columns: var(--dash-left) minmax(0, 1fr);
+		width: 100%;
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
 		gap: 48px;
-		padding: 24px 160px 80px;
+		padding: 24px var(--dash-pad-x) 80px;
 		box-sizing: border-box;
 
 		> .side {
+			flex: 0 0 var(--dash-left);
+			width: var(--dash-left);
 			display: flex;
 			flex-direction: column;
 			gap: 28px;
@@ -141,6 +149,7 @@
 		}
 
 		> .main {
+			flex: 1 1 auto;
 			min-width: 0;
 			display: flex;
 			flex-direction: column;
@@ -293,42 +302,16 @@
 	}
 }
 
-@media (max-width: 1600px) {
-	.dashboard {
-		width: 1600px;
-
-		> .app-chrome {
-			width: 1600px;
-		}
-
-		> .servers {
-			width: 1600px;
-			padding: 16px 80px 64px;
-		}
-	}
-}
-
-@media (max-width: 1280px) {
-	.dashboard {
-		width: 1280px;
-
-		> .app-chrome {
-			width: 1280px;
-			padding: 0 80px;
-		}
-
-		> .servers {
-			width: 1280px;
-			padding: 16px 80px 64px;
-		}
-	}
-}
-
 @media (max-width: 1100px) {
 	.dashboard > .servers {
-		grid-template-columns: 1fr;
+		flex-direction: column;
+		gap: 24px;
+		padding-top: 16px;
+		padding-bottom: 64px;
 
 		> .side {
+			flex: none;
+			width: 100%;
 			flex-direction: row;
 			align-items: center;
 			justify-content: space-between;
@@ -345,33 +328,23 @@
 
 			> .nav {
 				display: none;
-				
+
 				> .logout {
 					margin-top: 0;
 				}
 			}
-
 		}
 	}
 }
 
 @media (max-width: 900px) {
 	.dashboard {
-		width: 900px;
-
-		> .app-chrome {
-			width: 900px;
-			padding: 0 40px;
-		}
-
 		> .loading {
-			padding: 64px 40px;
+			padding-top: 64px;
+			padding-bottom: 64px;
 		}
 
 		> .servers {
-			width: 900px;
-			padding: 16px 40px 64px;
-
 			> .main > .hero > .title {
 				font-size: 2.25rem;
 			}

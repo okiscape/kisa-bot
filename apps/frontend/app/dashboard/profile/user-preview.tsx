@@ -61,7 +61,7 @@ export default function UserPreview({
 	const showMembership = Boolean(profile.aboutMe || profile.customImage)
 
 	return (
-		<aside className="preview">
+		<aside className="discord-preview">
 			<div className="side-head">
 				<strong>Preview</strong>
 				<span>Right-side copy of Discord /user info</span>

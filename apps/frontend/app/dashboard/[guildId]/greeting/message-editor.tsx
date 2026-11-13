@@ -254,7 +254,7 @@ export default function MessageEditor({
 				/>
 			</div>
 
-			<aside className="preview">
+			<aside className="discord-preview">
 				<div className="side-head">
 					<strong>Preview</strong>
 					<span>Live Discord-style</span>

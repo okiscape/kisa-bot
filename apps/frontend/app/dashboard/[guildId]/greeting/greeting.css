@@ -48,12 +48,13 @@
 	}
 
 	> .editor {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) var(--dash-right, 320px);
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
 		gap: 48px;
-		align-items: start;
 
 		> .form {
+			flex: 1 1 auto;
 			min-width: 0;
 
 			> .enable {
@@ -168,243 +169,16 @@
 				padding: 16px 0;
 			}
 		}
-
-		> .preview {
-			position: sticky;
-			top: 24px;
-			width: var(--dash-right, 320px);
-
-			> .side-head {
-				margin-bottom: 18px;
-
-				> strong {
-					display: block;
-					font-family: var(--font-display);
-					font-size: 1.25rem;
-				}
-
-				> span {
-					display: block;
-					margin-top: 6px;
-					color: var(--color-muted);
-					font-family: var(--font-body);
-					font-size: 0.875rem;
-				}
-			}
-
-			> .discord-msg {
-				border: 1px solid var(--color-border);
-				border-radius: 16px;
-				padding: 18px;
-				background: #111214;
-
-				> .msg-head {
-					display: flex;
-					align-items: center;
-					gap: 12px;
-
-					> .bot-avatar {
-						width: 44px;
-						height: 44px;
-						border-radius: 50%;
-						background: radial-gradient(circle at 30% 30%, #ffb36b, #5a2d12);
-						object-fit: cover;
-						flex-shrink: 0;
-					}
-
-					> div {
-						> .name-row {
-							display: flex;
-							align-items: center;
-							gap: 8px;
-
-							> strong {
-								font-family: var(--font-display);
-							}
-
-							> .bot-tag {
-								display: inline-flex;
-								align-items: center;
-								height: 18px;
-								padding: 0 6px;
-								border-radius: 4px;
-								background: #5865f2;
-								color: #fff;
-								font-size: 0.625rem;
-								font-weight: 700;
-							}
-						}
-
-						> .time {
-							display: block;
-							margin-top: 2px;
-							font-family: var(--font-body);
-							font-size: 0.75rem;
-							color: var(--color-muted-2);
-						}
-					}
-				}
-
-				> .msg-content {
-					margin-top: 12px;
-					white-space: pre-wrap;
-					line-height: 1.45;
-					font-family: var(--font-body);
-
-					.md-h1,
-					.md-h2,
-					.md-h3 {
-						margin: 0.35em 0 0.15em;
-						font-family: var(--font-display);
-						font-weight: 700;
-						line-height: 1.25;
-						color: #f2f3f5;
-					}
-
-					.md-h1 {
-						font-size: 1.35em;
-					}
-
-					.md-h2 {
-						font-size: 1.2em;
-					}
-
-					.md-h3 {
-						font-size: 1.05em;
-					}
-
-					.md-quote {
-						margin: 0.35em 0;
-						padding: 0 0 0 12px;
-						border-left: 3px solid #4e5058;
-						color: #c4c9ce;
-					}
-
-					code {
-						padding: 0.1em 0.35em;
-						border-radius: 4px;
-						background: #1e1f22;
-						font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-						font-size: 0.9em;
-					}
-
-					a {
-						color: #00a8fc;
-						text-decoration: none;
-
-						&:hover {
-							text-decoration: underline;
-						}
-					}
-				}
-
-				> .msg-embed {
-					margin-top: 12px;
-					border-left: 4px solid;
-					border-radius: 4px;
-					background: #2b2d31;
-					padding: 14px 16px;
-					display: flex;
-					flex-direction: column;
-					gap: 8px;
-
-					> .embed-author {
-						font-size: 0.8125rem;
-						font-weight: 600;
-					}
-
-					> .embed-title {
-						font-family: var(--font-display);
-						font-size: 1rem;
-						font-weight: 700;
-						white-space: pre-wrap;
-					}
-
-					> .embed-desc {
-						color: #dbdee1;
-						font-family: var(--font-body);
-						font-size: 0.9375rem;
-						line-height: 1.4;
-						white-space: pre-wrap;
-
-						.md-h1,
-						.md-h2,
-						.md-h3 {
-							margin: 0.35em 0 0.15em;
-							font-family: var(--font-display);
-							font-weight: 700;
-							line-height: 1.25;
-							color: #f2f3f5;
-						}
-
-						.md-h1 {
-							font-size: 1.35em;
-						}
-
-						.md-h2 {
-							font-size: 1.2em;
-						}
-
-						.md-h3 {
-							font-size: 1.05em;
-						}
-
-						.md-quote {
-							margin: 0.35em 0;
-							padding: 0 0 0 12px;
-							border-left: 3px solid #4e5058;
-							color: #c4c9ce;
-						}
-
-						code {
-							padding: 0.1em 0.35em;
-							border-radius: 4px;
-							background: #1e1f22;
-							font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-							font-size: 0.9em;
-						}
-
-						a {
-							color: #00a8fc;
-							text-decoration: none;
-
-							&:hover {
-								text-decoration: underline;
-							}
-						}
-					}
-
-					> .embed-image {
-						width: 100%;
-						max-height: 160px;
-						object-fit: cover;
-						border-radius: 8px;
-						margin-top: 4px;
-
-						&.placeholder {
-							height: 120px;
-							background: linear-gradient(135deg, #3a3a3a, #1f1f1f);
-						}
-					}
-				}
-			}
-		}
 	}
 }
 
 @media (max-width: 1280px) {
 	.greeting > .editor {
-		grid-template-columns: 1fr;
+		flex-direction: column;
 		gap: 40px;
 
 		> .form {
 			width: 100%;
-		}
-
-		> .preview {
-			position: static;
-			width: min(100%, var(--dash-right, 320px));
-			max-width: 100%;
 		}
 	}
 }

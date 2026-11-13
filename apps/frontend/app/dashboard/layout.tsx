@@ -3,6 +3,7 @@
 import { AuthProvider, useAuth } from "@/components/auth-provider"
 import AppChrome from "@/components/app-chrome"
 import "./dashboard.css"
+import "./discord-preview.css"
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
 	const { user, loading } = useAuth()
