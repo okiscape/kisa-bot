@@ -12,8 +12,8 @@
 		width: 1600px;
 		display: flex;
 		align-items: center;
-		gap: 40px;
 		padding: 40px 160px 60px;
+		justify-content: space-between;
 
 		> .text {
 			display: flex;
@@ -65,6 +65,8 @@
 			width: 560px;
 			height: 480px;
 			flex-shrink: 0;
+			display: flex;
+			align-items: center; justify-content: center;
 
 			> .mascot {
 				position: absolute;
@@ -673,15 +675,16 @@
 		> .row {
 			display: flex;
 			align-items: center;
-			gap: 48px;
+			justify-content: space-between;
+			gap: 32px;
 			width: 1280px;
 
 			> .stat {
 				display: flex;
-				width: 260px;
+				flex: 1;
+				min-width: 0;
 				flex-direction: column;
 				gap: 6px;
-				flex-shrink: 0;
 
 				> strong {
 					font-family: var(--font-display);

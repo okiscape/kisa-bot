@@ -6,6 +6,8 @@ import asyncio
 import time
 from typing import TYPE_CHECKING
 
+import disnake
+
 from utils import config
 from utils.bot_logging import Logging
 
@@ -22,13 +24,20 @@ class MetricsFlusher:
         self.bot = bot
         self._task: asyncio.Task | None = None
         self._started_at = time.monotonic()
+        self._used_commands = 0
+        self._seeded = False
 
     def start(self) -> None:
         if self._task and not self._task.done():
             return
+        self.bot.add_listener(self._on_interaction, "on_interaction")
         self._task = asyncio.create_task(self._loop(), name="bot-metrics-flusher")
 
     async def stop(self) -> None:
+        try:
+            self.bot.remove_listener(self._on_interaction, "on_interaction")
+        except Exception:
+            pass
         if self._task and not self._task.done():
             self._task.cancel()
             try:
@@ -41,7 +50,24 @@ class MetricsFlusher:
         except Exception as exc:
             logging.warning("metrics", f"offline flush failed: {exc}", type="warn")
 
+    def record_command_use(self) -> None:
+        self._used_commands += 1
+
+    async def _on_interaction(self, inter: disnake.Interaction) -> None:
+        if inter.type == disnake.InteractionType.application_command:
+            self.record_command_use()
+
+    async def _ensure_seeded(self) -> None:
+        if self._seeded:
+            return
+        db_value = await self.bot.database.get_bot_metrics_used_commands()
+        # Preserve increments that arrived while the SELECT was in flight.
+        self._used_commands = db_value + self._used_commands
+        self._seeded = True
+
     async def flush_once(self) -> None:
+        await self._ensure_seeded()
+
         guilds = list(self.bot.guilds)
         guild_count = len(guilds)
         user_count = sum(g.member_count or 0 for g in guilds)
@@ -68,6 +94,7 @@ class MetricsFlusher:
             guild_count=guild_count,
             user_count=user_count,
             command_count=command_count,
+            used_commands=self._used_commands,
             channel_count=channel_count,
             shard_count=shard_count,
             latency_ms=latency_ms,

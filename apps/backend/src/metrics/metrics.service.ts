@@ -8,6 +8,7 @@ export interface MetricsSummary {
   guildCount: number;
   userCount: number;
   commandCount: number;
+  usedCommands: number;
   uptimeSeconds: number;
   latencyMs: number;
   version: string;
@@ -26,6 +27,7 @@ const EMPTY: Omit<MetricsDetailed, "fetchedAt" | "stale"> = {
   guildCount: 0,
   userCount: 0,
   commandCount: 0,
+  usedCommands: 0,
   channelCount: 0,
   shardCount: 0,
   uptimeSeconds: 0,
@@ -142,6 +144,7 @@ export class MetricsService {
       guildCount: row.guildCount,
       userCount: row.userCount,
       commandCount: row.commandCount,
+      usedCommands: row.usedCommands,
       channelCount: row.channelCount,
       shardCount: row.shardCount,
       uptimeSeconds: row.uptimeSeconds,

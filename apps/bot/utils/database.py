@@ -67,6 +67,7 @@ db_schema = {
         "guild_count": "INTEGER NOT NULL DEFAULT 0",
         "user_count": "INTEGER NOT NULL DEFAULT 0",
         "command_count": "INTEGER NOT NULL DEFAULT 0",
+        "used_commands": "INTEGER NOT NULL DEFAULT 0",
         "channel_count": "INTEGER NOT NULL DEFAULT 0",
         "shard_count": "INTEGER NOT NULL DEFAULT 0",
         "latency_ms": "INTEGER NOT NULL DEFAULT 0",
@@ -926,12 +927,31 @@ class DatabaseManager:
             filters=[Filter("user_id", user_id)],
         )
 
+    async def get_bot_metrics_used_commands(self) -> int:
+        """Return persisted used_commands for the singleton row (default 0)."""
+        try:
+            result = await self.db.execute(
+                """
+                SELECT used_commands FROM bot_metrics WHERE id = 1
+                """,
+            )
+            row = result.fetchone
+            if row is None:
+                return 0
+            return int(row[0] or 0)
+        except Exception as exc:
+            logging.warning(
+                "bot_metrics used_commands read failed", str(exc), type="DB"
+            )
+            return 0
+
     async def upsert_bot_metrics(
         self,
         *,
         guild_count: int,
         user_count: int,
         command_count: int,
+        used_commands: int,
         channel_count: int,
         shard_count: int,
         latency_ms: int,
@@ -943,15 +963,16 @@ class DatabaseManager:
         await self.db.execute(
             """
             INSERT INTO bot_metrics (
-              id, guild_count, user_count, command_count, channel_count,
+              id, guild_count, user_count, command_count, used_commands, channel_count,
               shard_count, latency_ms, uptime_seconds, version, online, updated_at
             ) VALUES (
-              1, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+              1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()
             )
             ON CONFLICT (id) DO UPDATE SET
               guild_count = EXCLUDED.guild_count,
               user_count = EXCLUDED.user_count,
               command_count = EXCLUDED.command_count,
+              used_commands = EXCLUDED.used_commands,
               channel_count = EXCLUDED.channel_count,
               shard_count = EXCLUDED.shard_count,
               latency_ms = EXCLUDED.latency_ms,
@@ -963,6 +984,7 @@ class DatabaseManager:
             guild_count,
             user_count,
             command_count,
+            used_commands,
             channel_count,
             shard_count,
             latency_ms,

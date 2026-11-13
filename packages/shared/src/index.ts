@@ -133,6 +133,7 @@ export interface MetricsSummary {
   guildCount: number;
   userCount: number;
   commandCount: number;
+  usedCommands: number;
   uptimeSeconds: number;
   latencyMs: number;
   version: string;

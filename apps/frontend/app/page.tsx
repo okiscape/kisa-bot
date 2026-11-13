@@ -9,12 +9,14 @@ type MetricsPayload = {
 	guildCount?: number
 	userCount?: number
 	commandCount?: number
+	usedCommands?: number
 }
 
 async function fetchLandingMetrics(): Promise<{
 	communitiesCount: number
 	membersCount: number
 	commandsCount: number
+	usedCommandsCount: number
 }> {
 	const base = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001").replace(
 		/\/$/,
@@ -25,7 +27,12 @@ async function fetchLandingMetrics(): Promise<{
 			next: { revalidate: 30 },
 		})
     if (!res.ok) {
-			return { communitiesCount: 0, membersCount: 0, commandsCount: 0 }
+			return {
+				communitiesCount: 0,
+				membersCount: 0,
+				commandsCount: 0,
+				usedCommandsCount: 0,
+			}
 		}
 		const body = (await res.json()) as { data?: MetricsPayload } & MetricsPayload
 		const data = body.data ?? body
@@ -33,10 +40,16 @@ async function fetchLandingMetrics(): Promise<{
 			communitiesCount: Number(data.guildCount ?? 0),
 			membersCount: Number(data.userCount ?? 0),
 			commandsCount: Number(data.commandCount ?? 0),
+			usedCommandsCount: Number(data.usedCommands ?? 0),
 		}
   } catch (e) {
     console.error("fetch failed: " + e);
-		return { communitiesCount: 0, membersCount: 0, commandsCount: 0 }
+		return {
+			communitiesCount: 0,
+			membersCount: 0,
+			commandsCount: 0,
+			usedCommandsCount: 0,
+		}
 	}
 }
 
@@ -93,7 +106,7 @@ function formatCount(value: number) {
 }
 
 export default async function Landing() {
-	const { communitiesCount, membersCount, commandsCount } =
+	const { communitiesCount, membersCount, commandsCount, usedCommandsCount } =
 		await fetchLandingMetrics()
 
 	return (
@@ -417,6 +430,11 @@ export default async function Landing() {
 					<div className="stat">
 						<strong className="appear-number">{formatCount(commandsCount)}</strong>
 						<span>commands</span>
+					</div>
+					<span className="divider" />
+					<div className="stat">
+						<strong className="appear-number">{formatCount(usedCommandsCount)}</strong>
+						<span>used commands</span>
 					</div>
 				</Appear>
 			</section>

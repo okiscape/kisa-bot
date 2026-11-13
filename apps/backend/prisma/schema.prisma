@@ -79,6 +79,7 @@ model BotMetrics {
   guildCount     Int      @default(0) @map("guild_count")
   userCount      Int      @default(0) @map("user_count")
   commandCount   Int      @default(0) @map("command_count")
+  usedCommands   Int      @default(0) @map("used_commands")
   channelCount   Int      @default(0) @map("channel_count")
   shardCount     Int      @default(0) @map("shard_count")
   latencyMs      Int      @default(0) @map("latency_ms")

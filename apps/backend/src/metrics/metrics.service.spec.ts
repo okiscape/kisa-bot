@@ -36,6 +36,7 @@ describe("MetricsService", () => {
       guildCount: 10,
       userCount: 100,
       commandCount: 5,
+      usedCommands: 42,
       channelCount: 20,
       shardCount: 1,
       uptimeSeconds: 60,
@@ -56,6 +57,7 @@ describe("MetricsService", () => {
       guildCount: 3,
       userCount: 9,
       commandCount: 2,
+      usedCommands: 17,
       channelCount: 4,
       shardCount: 1,
       uptimeSeconds: 10,
@@ -67,5 +69,6 @@ describe("MetricsService", () => {
     expect(data.online).toBe(true);
     expect(data.stale).toBe(false);
     expect(data.guildCount).toBe(3);
+    expect(data.usedCommands).toBe(17);
   });
 });
