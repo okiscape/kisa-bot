@@ -13,7 +13,6 @@ type Props = {
 export default function UserCapsule({
 	user,
 	className,
-	subtitle = "Discord account",
 }: Props) {
 	const name = displayName(user)
 	return (
@@ -27,7 +26,6 @@ export default function UserCapsule({
 			/>
 			<div className="meta">
 				<span className="name">{name}</span>
-				<span className="sub">{subtitle}</span>
 			</div>
 		</div>
 	)

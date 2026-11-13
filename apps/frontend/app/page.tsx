@@ -454,12 +454,7 @@ export default async function Landing() {
 				<div className="row">
 					<strong>kisa</strong>
 					<nav aria-label="Footer">
-						<a href="#docs">Docs</a>
-						<a href="#commands">Commands</a>
 						<a href="#statistics">Statistics</a>
-						<a href="#support">Support us</a>
-						<a href="#terms">Terms</a>
-						<a href="#privacy">Privacy</a>
 					</nav>
 					<span>2026 kisa, open-source all-in-one bot</span>
 				</div>

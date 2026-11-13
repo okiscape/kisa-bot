@@ -1,5 +1,11 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Link } from "next-view-transitions"
 import Button from "./button"
+import UserCapsule from "./user-capsule"
+import { apiFetch } from "@/lib/api"
+import type { SessionUser } from "@/lib/discord"
 import "./header.css"
 
 const navLinks = [
@@ -10,14 +16,30 @@ const navLinks = [
 ] as const
 
 type Props = {
-	loginHref?: string
-	inviteHref?: string
+	dashboardHref?: string
 }
 
-export default function Header({
-	loginHref = "/login",
-	inviteHref = "/login",
-}: Props) {
+export default function Header({ dashboardHref = "/dashboard" }: Props) {
+	const [user, setUser] = useState<SessionUser | null>(null)
+	const [ready, setReady] = useState(false)
+
+	useEffect(() => {
+		let cancelled = false
+		;(async () => {
+			try {
+				const me = await apiFetch<SessionUser>("/auth/me")
+				if (!cancelled) setUser(me)
+			} catch {
+				if (!cancelled) setUser(null)
+			} finally {
+				if (!cancelled) setReady(true)
+			}
+		})()
+		return () => {
+			cancelled = true
+		}
+	}, [])
+
 	return (
 		<header className="header">
 			<Link className="wordmark" href="/">
@@ -33,12 +55,15 @@ export default function Header({
 			</nav>
 
 			<div className="actions">
-				<Button href={loginHref} variant="ghost" size="md">
-					Log in
-				</Button>
-				<Button href={inviteHref} variant="primary" size="md">
-					Add to Discord
-				</Button>
+				{ready && user ? (
+					<Link href={dashboardHref} className="capsule-link">
+						<UserCapsule user={user} className="compact" />
+					</Link>
+				) : (
+					<Button href={dashboardHref} variant="ghost" size="md">
+						Dashboard
+					</Button>
+				)}
 			</div>
 		</header>
 	)

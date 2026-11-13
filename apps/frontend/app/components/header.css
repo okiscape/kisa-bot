@@ -40,6 +40,32 @@
 		align-items: center;
 		gap: 12px;
 		flex-shrink: 0;
+
+		> .capsule-link {
+			display: inline-flex;
+			text-decoration: none;
+			color: inherit;
+
+			> .user-capsule.compact {
+				min-width: 0;
+				height: 56px;
+				padding: 0 18px 0 8px;
+				gap: 12px;
+
+				> .avatar {
+					width: 40px;
+					height: 40px;
+				}
+
+				> .meta > .name {
+					font-size: 0.9375rem;
+				}
+
+				> .meta > .sub {
+					display: none;
+				}
+			}
+		}
 	}
 }
 
@@ -66,6 +92,14 @@
 
 		> .actions > .button.ghost {
 			display: none;
+		}
+
+		> .actions > .capsule-link > .user-capsule.compact {
+			padding-right: 0;
+
+			> .meta {
+				display: none;
+			}
 		}
 	}
 }

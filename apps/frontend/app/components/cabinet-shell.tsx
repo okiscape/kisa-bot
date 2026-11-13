@@ -32,19 +32,17 @@ export default function CabinetShell({
 	const name = user ? displayName(user) : ""
 	const banner =
 		user ? discordBannerUrl(user.id, user.banner) : null
-	const accent = accentToCss(user?.accent_color) ?? "var(--color-accent1)"
 
 	return (
 		<main className="servers">
 			<aside className="side" aria-label="Cabinet">
 				{user ? (
 					<div className="identity">
-						<div
-							className={`banner${banner ? "" : " empty"}`}
-							style={banner ? undefined : { background: accent }}
+						{banner && <div
+							className="banner"
 						>
-							{banner ? <img src={banner} alt="" /> : null}
-						</div>
+							<img src={banner} alt="Discord Nitro banner" title="Discord Nitro banner" />
+						</div>}
 						<div className="user">
 							<img
 								src={discordAvatarUrl(user.id, user.avatar, 64)}
@@ -76,11 +74,10 @@ export default function CabinetShell({
 							</Link>
 						),
 					)}
+					<button type="button" className="item logout" onClick={() => void logout()}>
+						Log out
+					</button>
 				</nav>
-
-				<button type="button" className="logout" onClick={() => void logout()}>
-					Log out
-				</button>
 			</aside>
 
 			<section className="main">{children}</section>

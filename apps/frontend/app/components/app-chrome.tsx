@@ -25,22 +25,13 @@ export default function AppChrome({
 			</Link>
 
 			<div className="right">
-				<nav className="links" aria-label="Secondary">
-					<a href="https://docs.oki.vodka" target="_blank" rel="noreferrer">
-						Docs
-					</a>
-					<a href="https://discord.gg" target="_blank" rel="noreferrer">
-						Support
-					</a>
-				</nav>
-
 				{showDashboardLink ? (
 					<Button href="/dashboard" variant="ghost" size="md">
 						Dashboard
 					</Button>
 				) : null}
 
-				{user ? <UserCapsule user={user} className="compact" /> : null}
+				{user ? <a href="/dashboard"><UserCapsule user={user} className="compact" /></a> : null}
 			</div>
 		</header>
 	)

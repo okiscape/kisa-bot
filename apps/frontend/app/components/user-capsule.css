@@ -2,17 +2,12 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 14px;
-	min-width: 220px;
 	height: 72px;
-	padding: 0 22px 0 12px;
-	border-radius: 999px;
-	background: linear-gradient(90deg, #1a2333 0%, #0b0f16 100%);
-	border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 	flex-shrink: 0;
 
 	> .avatar {
-		width: 48px;
-		height: 48px;
+		width: 36px;
+		aspect-ratio: 1/1;
 		border-radius: 50%;
 		object-fit: cover;
 		flex-shrink: 0;
