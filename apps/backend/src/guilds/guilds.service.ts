@@ -13,6 +13,11 @@ import {
   DiscordApiGuild,
   DiscordApiRole,
 } from "../discord/discord.types";
+import {
+  annotateRolesForBot,
+  roleManageability,
+  botHighestRolePosition,
+} from "../discord/role-manageability";
 import { ErrorCodes } from "../common/types/error-codes";
 import { UpdateGuildSettingsDto } from "./dto/update-guild-settings.dto";
 import {
@@ -192,7 +197,7 @@ export class GuildsService {
 
   async getRoles(guildId: string): Promise<DiscordApiRole[]> {
     const { value } = await this.cache.getOrSet(
-      `discord:guild:${guildId}:roles`,
+      `discord:guild:${guildId}:roles:v2`,
       () => this.discord.getGuildRoles(guildId),
       { ttlSeconds: 300, staleSeconds: 3600, staleIfError: true },
     );
@@ -306,6 +311,21 @@ export class GuildsService {
       this.getChannels(guildId),
       this.getRoles(guildId),
     ]);
+    let annotated: Array<
+      DiscordApiRole & { manageable: boolean; manageReason: string | null }
+    > | null = null;
+    try {
+      const { botUserId, botMemberRoleIds } =
+        await this.resolveBotMemberRoles(guildId);
+      annotated = annotateRolesForBot(
+        roles,
+        guildId,
+        botUserId,
+        botMemberRoleIds,
+      );
+    } catch {
+      annotated = null;
+    }
     return {
       channels: channels.map((c) => ({
         id: c.id,
@@ -314,11 +334,16 @@ export class GuildsService {
         position: c.position,
         parentId: c.parent_id,
       })),
-      roles: roles.map((r) => ({
+      roles: (annotated ?? roles).map((r) => ({
         id: r.id,
         name: r.name,
         color: r.color,
         position: r.position,
+        managed: Boolean(r.managed),
+        manageable:
+          annotated != null && "manageable" in r
+            ? Boolean(r.manageable)
+            : true,
       })),
       languages: [...SUPPORTED_LANGUAGES],
       badWordsActions: [...BAD_WORDS_ACTIONS],
@@ -473,7 +498,7 @@ export class GuildsService {
       roleIds.length ? this.getRoles(guildId) : Promise.resolve([]),
     ]);
     const channelSet = new Set(channels.map((c) => c.id));
-    const roleSet = new Set(roles.map((r) => r.id));
+    const roleById = new Map(roles.map((r) => [r.id, r]));
 
     for (const field of CHANNEL_FIELDS) {
       const value = dto[field];
@@ -497,16 +522,69 @@ export class GuildsService {
         });
       }
     }
+
+    let botTopPosition = 0;
+    if (roleIds.length) {
+      botTopPosition = await this.resolveBotTopPosition(guildId, roles);
+    }
+
     for (const field of ROLE_FIELDS) {
       const value = dto[field];
-      if (typeof value === "string" && !roleSet.has(value)) {
+      if (typeof value !== "string") continue;
+      const role = roleById.get(value);
+      if (!role) {
         throw new BadRequestException({
           code: ErrorCodes.VALIDATION_ERROR,
           message: `${field} is not a role in this guild`,
           details: { field, value },
         });
       }
+      const check = roleManageability(role, guildId, botTopPosition);
+      if (!check.manageable) {
+        throw new BadRequestException({
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: `Bot cannot manage role "${role.name}"${
+            check.reason ? `: ${check.reason}` : ""
+          }`,
+          details: { field, value },
+        });
+      }
     }
+  }
+
+  private async resolveBotTopPosition(
+    guildId: string,
+    roles: DiscordApiRole[],
+  ): Promise<number> {
+    try {
+      const { botUserId, botMemberRoleIds } =
+        await this.resolveBotMemberRoles(guildId);
+      return botHighestRolePosition(roles, botUserId, botMemberRoleIds);
+    } catch {
+      return 0;
+    }
+  }
+
+  private async resolveBotMemberRoles(
+    guildId: string,
+  ): Promise<{ botUserId: string; botMemberRoleIds: string[] }> {
+    const { value: botUserId } = await this.cache.getOrSet(
+      "discord:bot:user-id",
+      async () => {
+        const bot = await this.discord.getBotUser();
+        return bot.id;
+      },
+      { ttlSeconds: 3600, staleSeconds: 86400, staleIfError: true },
+    );
+    const { value: botMemberRoleIds } = await this.cache.getOrSet(
+      `discord:guild:${guildId}:bot-member-roles`,
+      async () => {
+        const member = await this.discord.getGuildMember(guildId, botUserId);
+        return member.roles;
+      },
+      { ttlSeconds: 60, staleSeconds: 300, staleIfError: true },
+    );
+    return { botUserId, botMemberRoleIds };
   }
 
   private toDiscoveryItem(

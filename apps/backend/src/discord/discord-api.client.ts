@@ -248,7 +248,35 @@ export class DiscordApiClient {
         mentionable: r.mentionable,
         hoist: r.hoist,
         managed: r.managed,
+        permissions: r.permissions,
+        tags: r.tags
+          ? {
+              bot_id: r.tags.bot_id,
+              integration_id: r.tags.integration_id,
+            }
+          : undefined,
       }));
+  }
+
+  async getGuildMember(
+    guildId: string,
+    userId: string,
+  ): Promise<{ id: string; roles: string[] }> {
+    const res = await this.request(`/guilds/${guildId}/members/${userId}`, {
+      token: this.discordConfig("botToken"),
+      tokenKind: "Bot",
+    });
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to fetch guild member");
+    }
+    const member = (await res.json()) as {
+      user?: { id: string };
+      roles?: string[];
+    };
+    return {
+      id: member.user?.id ?? userId,
+      roles: Array.isArray(member.roles) ? member.roles.map(String) : [],
+    };
   }
 
   async getGuildChannels(guildId: string): Promise<DiscordApiChannel[]> {

@@ -47,6 +47,10 @@ export interface DiscordApiRole {
   hoist: boolean;
   managed?: boolean;
   permissions?: string;
+  tags?: {
+    bot_id?: string;
+    integration_id?: string;
+  };
 }
 
 export interface DiscordApiChannel {

@@ -28,6 +28,16 @@ export type MessageConfig = {
 	embeds: MessageEmbedConfig[]
 }
 
+export type SettingsRoleOption = {
+	id: string
+	name: string
+	color: number
+	position: number
+	managed?: boolean
+	/** False when the bot cannot assign/remove this role. */
+	manageable?: boolean
+}
+
 export type SettingsOptions = {
 	channels: Array<{
 		id: string
@@ -36,7 +46,24 @@ export type SettingsOptions = {
 		position: number
 		parentId: string | null
 	}>
-	roles: Array<{ id: string; name: string; color: number; position: number }>
+	roles: SettingsRoleOption[]
+}
+
+/** Role `<select>` options sorted by Discord position; unmanageable roles disabled. */
+export function roleSelectOptions(roles: SettingsRoleOption[] | undefined) {
+	return (roles ?? [])
+		.slice()
+		.sort((a, b) => b.position - a.position)
+		.map((r) => {
+			const manageable = r.manageable !== false
+			return {
+				value: r.id,
+				label: manageable
+					? `${r.name} (${r.id})`
+					: `${r.name} (${r.id}) - can't manage`,
+				disabled: !manageable,
+			}
+		})
 }
 
 export function emptyEmbedField(): MessageEmbedField {

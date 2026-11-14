@@ -6,7 +6,7 @@ import { FormRow, SelectField, TextAreaField } from "@/components/form-controls"
 import SettingsSaveBar from "@/components/settings-save-bar"
 import { apiFetch } from "@/lib/api"
 import type { GuildSettings } from "@/lib/guild-settings"
-import type { SettingsOptions } from "@/lib/message-config"
+import { roleSelectOptions, type SettingsOptions } from "@/lib/message-config"
 
 type ModerationForm = {
 	badWords: string
@@ -107,10 +107,7 @@ export default function ModerationPage() {
 		)
 	}
 
-	const roles = (options?.roles ?? [])
-		.slice()
-		.sort((a, b) => b.position - a.position)
-		.map((r) => ({ value: r.id, label: `${r.name} (${r.id})` }))
+	const roles = roleSelectOptions(options?.roles)
 	const channels = (options?.channels ?? [])
 		.filter((c) => c.type === 0 || c.type === 5)
 		.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` }))

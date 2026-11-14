@@ -18,6 +18,7 @@ import {
 	emptyEmbedField,
 	renderPreviewText,
 	resolveEmbedColor,
+	roleSelectOptions,
 	TEMPLATE_VARS,
 	TEXTISH_CHANNEL_TYPES,
 	type MessageConfig,
@@ -85,10 +86,7 @@ export default function MessageEditor({
 		.filter((c) => TEXTISH_CHANNEL_TYPES.has(c.type))
 		.sort((a, b) => a.position - b.position)
 		.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` }))
-	const roles = (options?.roles ?? [])
-		.slice()
-		.sort((a, b) => b.position - a.position)
-		.map((r) => ({ value: r.id, label: `${r.name} (${r.id})` }))
+	const roles = roleSelectOptions(options?.roles)
 	const showAutoRole = onAutoRoleChange !== undefined
 	const showSettings = value.enabled
 	const embeds = value.embeds

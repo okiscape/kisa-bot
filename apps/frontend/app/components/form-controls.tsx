@@ -58,7 +58,7 @@ export function SelectField({
 }: {
 	value: string | null
 	onChange: (value: string | null) => void
-	options: Array<{ value: string; label: string }>
+	options: Array<{ value: string; label: string; disabled?: boolean }>
 	placeholder?: string
 	disabled?: boolean
 }) {
@@ -71,7 +71,7 @@ export function SelectField({
 		>
 			<option value="">{placeholder}</option>
 			{options.map((opt) => (
-				<option key={opt.value} value={opt.value}>
+				<option key={opt.value} value={opt.value} disabled={opt.disabled}>
 					{opt.label}
 				</option>
 			))}

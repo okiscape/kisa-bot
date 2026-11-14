@@ -16,6 +16,7 @@ import {
 import { apiFetch, ApiError } from "@/lib/api"
 import {
 	resolveEmbedColor,
+	roleSelectOptions,
 	TEXTISH_CHANNEL_TYPES,
 	type SettingsOptions,
 } from "@/lib/message-config"
@@ -81,14 +82,7 @@ export default function PanelForm({
 	)
 
 	const roles = useMemo(
-		() =>
-			(options.roles ?? [])
-				.slice()
-				.sort((a, b) => b.position - a.position)
-				.map((r) => ({
-					value: r.id,
-					label: `${r.name} (${r.id})`,
-				})),
+		() => roleSelectOptions(options.roles),
 		[options.roles],
 	)
 
@@ -495,7 +489,11 @@ export default function PanelForm({
 								>
 									<option value="">Pick role</option>
 									{roles.map((r) => (
-										<option key={r.value} value={r.value}>
+										<option
+											key={r.value}
+											value={r.value}
+											disabled={r.disabled}
+										>
 											{r.label}
 										</option>
 									))}

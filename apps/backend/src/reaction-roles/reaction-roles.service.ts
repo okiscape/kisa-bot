@@ -13,6 +13,10 @@ import {
 } from "../cache/app-cache-keys";
 import { ErrorCodes } from "../common/types/error-codes";
 import { DiscordApiClient } from "../discord/discord-api.client";
+import {
+  botHighestRolePosition,
+  roleManageability,
+} from "../discord/role-manageability";
 import { PrismaService } from "../prisma/prisma.service";
 import { SETTINGS_CHANNEL_TYPES } from "../discord/discord.types";
 import { UpsertReactionRoleDto } from "./dto/upsert-reaction-role.dto";
@@ -110,74 +114,90 @@ export class ReactionRolesService {
       });
     }
 
-    let messageId: string;
+    let messageId: string | null = null;
     let botOwned: boolean;
+    let persisted = false;
 
-    if (normalized.mode === "existing") {
-      const msg = await this.discord.getChannelMessage(
-        normalized.channelId,
-        normalized.existingMessageId!,
-      );
-      messageId = msg.id;
-      const bot = await this.discord.getBotUser();
-      botOwned = msg.author.id === bot.id;
+    try {
+      if (normalized.mode === "existing") {
+        const msg = await this.discord.getChannelMessage(
+          normalized.channelId,
+          normalized.existingMessageId!,
+        );
+        messageId = msg.id;
+        const bot = await this.discord.getBotUser();
+        botOwned = msg.author.id === bot.id;
 
-      const taken = await this.prisma.reactionRolePanel.findUnique({
-        where: { messageId: BigInt(messageId) },
-      });
-      if (taken) {
-        throw new ConflictException({
-          code: ErrorCodes.CONFLICT,
-          message: "That message already has a reaction role panel",
+        const taken = await this.prisma.reactionRolePanel.findUnique({
+          where: { messageId: BigInt(messageId) },
         });
+        if (taken) {
+          throw new ConflictException({
+            code: ErrorCodes.CONFLICT,
+            message: "That message already has a reaction role panel",
+          });
+        }
+      } else {
+        const payload = this.buildMessagePayload(
+          normalized.mode,
+          normalized.content,
+          normalized.embed,
+        );
+        const msg = await this.discord.createChannelMessage(
+          normalized.channelId,
+          payload,
+        );
+        messageId = msg.id;
+        botOwned = true;
       }
-    } else {
-      const payload = this.buildMessagePayload(
-        normalized.mode,
-        normalized.content,
-        normalized.embed,
-      );
-      const msg = await this.discord.createChannelMessage(
+
+      await this.syncReactions(
         normalized.channelId,
-        payload,
+        messageId,
+        [],
+        normalized.pairs.map((p) => p.emoji),
       );
-      messageId = msg.id;
-      botOwned = true;
-    }
 
-    await this.syncReactions(
-      normalized.channelId,
-      messageId,
-      [],
-      normalized.pairs.map((p) => p.emoji),
-    );
-
-    const row = await this.prisma.reactionRolePanel.create({
-      data: {
-        guildId: BigInt(guildId),
-        channelId: BigInt(normalized.channelId),
-        messageId: BigInt(messageId),
-        mode: normalized.mode,
-        type: normalized.type,
-        content: normalized.content,
-        embed:
-          normalized.embed === null
-            ? Prisma.JsonNull
-            : (normalized.embed as unknown as Prisma.InputJsonValue),
-        botOwned,
-        pairs: {
-          create: normalized.pairs.map((p) => ({
-            emoji: p.emoji,
-            roleId: BigInt(p.roleId),
-            position: p.position,
-          })),
+      const row = await this.prisma.reactionRolePanel.create({
+        data: {
+          guildId: BigInt(guildId),
+          channelId: BigInt(normalized.channelId),
+          messageId: BigInt(messageId),
+          mode: normalized.mode,
+          type: normalized.type,
+          content: normalized.content,
+          embed:
+            normalized.embed === null
+              ? Prisma.JsonNull
+              : (normalized.embed as unknown as Prisma.InputJsonValue),
+          botOwned,
+          pairs: {
+            create: normalized.pairs.map((p) => ({
+              emoji: p.emoji,
+              roleId: BigInt(p.roleId),
+              position: p.position,
+            })),
+          },
         },
-      },
-      include: { pairs: { orderBy: { position: "asc" } } },
-    });
+        include: { pairs: { orderBy: { position: "asc" } } },
+      });
+      persisted = true;
 
-    await this.invalidateCaches(guildId, messageId);
-    return this.toDto(row);
+      await this.invalidateCaches(guildId, messageId);
+      return this.toDto(row);
+    } catch (err) {
+      if (messageId && normalized.mode !== "existing" && !persisted) {
+        try {
+          await this.discord.deleteChannelMessage(
+            normalized.channelId,
+            messageId,
+          );
+        } catch {
+          // best-effort orphan cleanup
+        }
+      }
+      throw err;
+    }
   }
 
   async update(
@@ -262,36 +282,37 @@ export class ReactionRolesService {
     const newEmojis = normalized.pairs.map((p) => p.emoji);
     await this.syncReactions(channelId, messageId, oldEmojis, newEmojis);
 
-    await this.prisma.reactionRolePair.deleteMany({
-      where: { panelId: existing.id },
-    });
-
-    const row = await this.prisma.reactionRolePanel.update({
-      where: { id: existing.id },
-      data: {
-        channelId: BigInt(channelId),
-        mode:
-          existing.mode === "existing" ? existing.mode : normalized.mode,
-        type: normalized.type,
-        content:
-          existing.botOwned && existing.mode !== "existing"
-            ? normalized.content
-            : existing.content,
-        embed:
-          existing.botOwned && existing.mode !== "existing"
-            ? normalized.embed === null
-              ? Prisma.JsonNull
-              : (normalized.embed as unknown as Prisma.InputJsonValue)
-            : (existing.embed as Prisma.InputJsonValue),
-        pairs: {
-          create: normalized.pairs.map((p) => ({
-            emoji: p.emoji,
-            roleId: BigInt(p.roleId),
-            position: p.position,
-          })),
+    const row = await this.prisma.$transaction(async (tx) => {
+      await tx.reactionRolePair.deleteMany({
+        where: { panelId: existing.id },
+      });
+      return tx.reactionRolePanel.update({
+        where: { id: existing.id },
+        data: {
+          channelId: BigInt(channelId),
+          mode:
+            existing.mode === "existing" ? existing.mode : normalized.mode,
+          type: normalized.type,
+          content:
+            existing.botOwned && existing.mode !== "existing"
+              ? normalized.content
+              : existing.content,
+          embed:
+            existing.botOwned && existing.mode !== "existing"
+              ? normalized.embed === null
+                ? Prisma.JsonNull
+                : (normalized.embed as unknown as Prisma.InputJsonValue)
+              : (existing.embed as Prisma.InputJsonValue),
+          pairs: {
+            create: normalized.pairs.map((p) => ({
+              emoji: p.emoji,
+              roleId: BigInt(p.roleId),
+              position: p.position,
+            })),
+          },
         },
-      },
-      include: { pairs: { orderBy: { position: "asc" } } },
+        include: { pairs: { orderBy: { position: "asc" } } },
+      });
     });
 
     await this.invalidateCaches(guildId, messageId);
@@ -390,10 +411,23 @@ export class ReactionRolesService {
     channelId: string,
     roleIds: string[],
   ): Promise<void> {
-    const [channels, roles] = await Promise.all([
+    const [channels, roles, botUser] = await Promise.all([
       this.discord.getGuildChannels(guildId),
       this.discord.getGuildRoles(guildId),
+      this.discord.getBotUser(),
     ]);
+    let botMemberRoles: string[] = [];
+    try {
+      const member = await this.discord.getGuildMember(guildId, botUser.id);
+      botMemberRoles = member.roles;
+    } catch {
+      botMemberRoles = [];
+    }
+    const botTopPosition = botHighestRolePosition(
+      roles,
+      botUser.id,
+      botMemberRoles,
+    );
     const textish = new Set<number>([
       SETTINGS_CHANNEL_TYPES.GUILD_TEXT,
       SETTINGS_CHANNEL_TYPES.GUILD_ANNOUNCEMENT,
@@ -405,12 +439,22 @@ export class ReactionRolesService {
         message: "Pick a text channel",
       });
     }
-    const roleSet = new Set(roles.map((r) => r.id));
+    const roleById = new Map(roles.map((r) => [r.id, r]));
     for (const roleId of roleIds) {
-      if (!roleSet.has(roleId)) {
+      const role = roleById.get(roleId);
+      if (!role) {
         throw new BadRequestException({
           code: ErrorCodes.VALIDATION_ERROR,
           message: `Unknown role: ${roleId}`,
+        });
+      }
+      const check = roleManageability(role, guildId, botTopPosition);
+      if (!check.manageable) {
+        throw new BadRequestException({
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: `Bot cannot manage role "${role.name}"${
+            check.reason ? `: ${check.reason}` : ""
+          }`,
         });
       }
     }
