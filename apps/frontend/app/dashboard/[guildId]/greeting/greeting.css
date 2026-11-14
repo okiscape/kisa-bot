@@ -198,6 +198,61 @@
 				padding-bottom: 12px;
 			}
 
+			.embed-field-list {
+				display: flex;
+				flex-direction: column;
+				gap: 14px;
+			}
+
+			.embed-field-list-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+
+				> span {
+					font-family: var(--font-display);
+					font-size: 0.9375rem;
+				}
+			}
+
+			.embed-field-panel {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+				padding: 14px 0 4px 20px;
+				border-top: 1px solid var(--color-border);
+			}
+
+			.embed-field-panel-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+
+				> span {
+					color: var(--color-muted);
+					font-family: var(--font-display);
+					font-size: 0.875rem;
+				}
+			}
+
+			.inline-toggle {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				min-height: 44px;
+				padding: 0 4px;
+
+				> span {
+					font-family: var(--font-display);
+					font-size: 0.875rem;
+					color: var(--color-muted);
+				}
+			}
+
+			.add-field,
 			.add-embed {
 				align-self: flex-start;
 				height: 44px;
@@ -208,6 +263,17 @@
 				color: var(--color-text);
 				font-family: var(--font-display);
 				cursor: pointer;
+			}
+
+			.add-field {
+				height: 34px;
+				padding: 0 12px;
+				font-size: 0.8125rem;
+				color: var(--color-muted);
+
+				&:hover {
+					color: var(--color-text);
+				}
 			}
 
 			.rule-actions {

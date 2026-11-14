@@ -23,6 +23,22 @@ const HTTPS_URL = /^https:\/\/.+/i;
 const DISCORD_WEBHOOK_URL =
   /^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+(?:\?.*)?$/i;
 
+export class MessageEmbedFieldDto {
+  @ApiPropertyOptional()
+  @IsString()
+  @MaxLength(256)
+  name!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @MaxLength(1024)
+  value!: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  inline!: boolean;
+}
+
 export class MessageEmbedConfigDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -95,6 +111,14 @@ export class MessageEmbedConfigDto {
   @Matches(HTTPS_URL)
   @MaxLength(500)
   imageUrl?: string | null;
+
+  @ApiPropertyOptional({ type: [MessageEmbedFieldDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(25)
+  @ValidateNested({ each: true })
+  @Type(() => MessageEmbedFieldDto)
+  fields?: MessageEmbedFieldDto[];
 }
 
 export class MessageConfigDto {

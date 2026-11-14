@@ -1,3 +1,9 @@
+export type MessageEmbedField = {
+  name: string;
+  value: string;
+  inline: boolean;
+};
+
 export type MessageEmbedConfig = {
   title: string | null;
   description: string | null;
@@ -10,6 +16,7 @@ export type MessageEmbedConfig = {
   footerIconUrl: string | null;
   thumbnailUrl: string | null;
   imageUrl: string | null;
+  fields: MessageEmbedField[];
 };
 
 export type MessageConfig = {
@@ -38,6 +45,19 @@ function asString(value: unknown): string | null {
   return trimmed.length ? trimmed : null;
 }
 
+function normalizeEmbedField(raw: unknown): MessageEmbedField | null {
+  if (!raw || typeof raw !== "object") return null;
+  const f = raw as Record<string, unknown>;
+  const name = typeof f.name === "string" ? f.name.slice(0, 256) : "";
+  const value = typeof f.value === "string" ? f.value.slice(0, 1024) : "";
+  if (!name.trim() && !value.trim()) return null;
+  return {
+    name,
+    value,
+    inline: Boolean(f.inline),
+  };
+}
+
 function normalizeEmbed(raw: unknown): MessageEmbedConfig | null {
   if (!raw || typeof raw !== "object") return null;
   const e = raw as Record<string, unknown>;
@@ -49,6 +69,12 @@ function normalizeEmbed(raw: unknown): MessageEmbedConfig | null {
     e.footer && typeof e.footer === "object"
       ? (e.footer as Record<string, unknown>)
       : null;
+  const fields = Array.isArray(e.fields)
+    ? e.fields
+        .map(normalizeEmbedField)
+        .filter((f): f is MessageEmbedField => f !== null)
+        .slice(0, 25)
+    : [];
 
   return {
     title: asString(e.title),
@@ -62,6 +88,7 @@ function normalizeEmbed(raw: unknown): MessageEmbedConfig | null {
     footerIconUrl: asString(e.footerIconUrl) ?? asString(footer?.iconUrl),
     thumbnailUrl: asString(e.thumbnailUrl) ?? asString(e.thumbnail),
     imageUrl: asString(e.imageUrl) ?? asString(e.image),
+    fields,
   };
 }
 
@@ -111,6 +138,7 @@ export function synthesizeGreetingConfig(row: {
       footerIconUrl: null,
       thumbnailUrl: null,
       imageUrl: row.greetImage,
+      fields: [],
     });
   }
 
@@ -149,6 +177,7 @@ export function synthesizeFarewellConfig(row: {
       footerIconUrl: null,
       thumbnailUrl: null,
       imageUrl: row.fareImage,
+      fields: [],
     });
   }
 

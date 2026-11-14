@@ -14,11 +14,13 @@ import {
 import { apiFetch } from "@/lib/api"
 import {
 	emptyEmbed,
+	emptyEmbedField,
 	renderPreviewText,
 	TEMPLATE_VARS,
 	TEXTISH_CHANNEL_TYPES,
 	type MessageConfig,
 	type MessageEmbedConfig,
+	type MessageEmbedField,
 	type SettingsOptions,
 } from "@/lib/message-config"
 import { MarkdownText } from "@/lib/simple-markdown"
@@ -30,6 +32,7 @@ const PREVIEW_VARS = {
 }
 
 const MAX_EMBEDS = 5
+const MAX_EMBED_FIELDS = 25
 const WEBHOOK_URL_RE =
 	/^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+(?:\?.*)?$/i
 
@@ -69,8 +72,34 @@ function embedHasPreview(embed: MessageEmbedConfig) {
 			embed.description ||
 			embed.imageUrl ||
 			embed.authorName ||
-			embed.url,
+			embed.footerText ||
+			embed.url ||
+			(embed.fields ?? []).some((f) => f.name || f.value),
 	)
+}
+
+/** Group Discord-style: non-inline alone, consecutive inline up to 3 per row. */
+function groupEmbedFields(fields: MessageEmbedField[]) {
+	const rows: MessageEmbedField[][] = []
+	let inlineBuf: MessageEmbedField[] = []
+	for (const field of fields) {
+		if (!field.name && !field.value) continue
+		if (field.inline) {
+			inlineBuf.push(field)
+			if (inlineBuf.length === 3) {
+				rows.push(inlineBuf)
+				inlineBuf = []
+			}
+			continue
+		}
+		if (inlineBuf.length) {
+			rows.push(inlineBuf)
+			inlineBuf = []
+		}
+		rows.push([field])
+	}
+	if (inlineBuf.length) rows.push(inlineBuf)
+	return rows
 }
 
 export default function MessageEditor({
@@ -155,6 +184,38 @@ export default function MessageEditor({
 			i === index ? { ...embed, ...partial } : embed,
 		)
 		patch({ embeds: next })
+	}
+
+	function patchEmbedField(
+		embedIndex: number,
+		fieldIndex: number,
+		partial: Partial<MessageEmbedField>,
+	) {
+		const embed = embeds[embedIndex]
+		if (!embed) return
+		const fields = embed.fields ?? []
+		patchEmbed(embedIndex, {
+			fields: fields.map((field, i) =>
+				i === fieldIndex ? { ...field, ...partial } : field,
+			),
+		})
+	}
+
+	function addEmbedField(embedIndex: number) {
+		const embed = embeds[embedIndex]
+		const fields = embed?.fields ?? []
+		if (!embed || fields.length >= MAX_EMBED_FIELDS) return
+		patchEmbed(embedIndex, {
+			fields: [...fields, emptyEmbedField()],
+		})
+	}
+
+	function removeEmbedField(embedIndex: number, fieldIndex: number) {
+		const embed = embeds[embedIndex]
+		if (!embed) return
+		patchEmbed(embedIndex, {
+			fields: (embed.fields ?? []).filter((_, i) => i !== fieldIndex),
+		})
 	}
 
 	function addEmbed() {
@@ -291,6 +352,7 @@ export default function MessageEditor({
 						<FormRow
 							label="Embeds"
 							hint={`Optional rich cards under the message (up to ${MAX_EMBEDS}).`}
+							column={true}
 						>
 							<div className="embed-list">
 								{embeds.map((embed, index) => {
@@ -371,6 +433,89 @@ export default function MessageEditor({
 														maxLength={4096}
 														placeholder="Embed description"
 													/>
+													<div className="stack-grid">
+														<TextField
+															label="Footer"
+															value={embed.footerText ?? ""}
+															onChange={(footerText) =>
+																patchEmbed(index, {
+																	footerText: footerText || null,
+																})
+															}
+														/>
+														<TextField
+															label="Footer icon URL"
+															value={embed.footerIconUrl ?? ""}
+															onChange={(footerIconUrl) =>
+																patchEmbed(index, {
+																	footerIconUrl: footerIconUrl || null,
+																})
+															}
+														/>
+													</div>
+													<div className="embed-field-list">
+														<div className="embed-field-list-head">
+															<span>Fields</span>
+															{(embed.fields?.length ?? 0) < MAX_EMBED_FIELDS ? (
+																<button
+																	type="button"
+																	className="add-field"
+																	onClick={() => addEmbedField(index)}
+																>
+																	Add field
+																</button>
+															) : null}
+														</div>
+														{(embed.fields ?? []).map((field, fieldIndex) => (
+															<div key={fieldIndex} className="embed-field-panel">
+																<div className="embed-field-panel-head">
+																	<span>Field #{fieldIndex + 1}</span>
+																	<button
+																		type="button"
+																		className="remove-embed"
+																		onClick={() =>
+																			removeEmbedField(index, fieldIndex)
+																		}
+																	>
+																		Remove
+																	</button>
+																</div>
+																<div className="stack-grid">
+																	<TextField
+																		label="Name"
+																		value={field.name}
+																		onChange={(name) =>
+																			patchEmbedField(index, fieldIndex, {
+																				name,
+																			})
+																		}
+																	/>
+																	<label className="inline-toggle">
+																		<span>Inline</span>
+																		<Switch
+																			checked={field.inline}
+																			onChange={(inline) =>
+																				patchEmbedField(index, fieldIndex, {
+																					inline,
+																				})
+																			}
+																			aria-label="Inline field"
+																		/>
+																	</label>
+																</div>
+																<TextAreaField
+																	value={field.value}
+																	onChange={(value) =>
+																		patchEmbedField(index, fieldIndex, {
+																			value,
+																		})
+																	}
+																	maxLength={1024}
+																	placeholder="Field value"
+																/>
+															</div>
+														))}
+													</div>
 													<div className="stack-grid">
 														<TextField
 															label="Image"
@@ -469,6 +614,10 @@ export default function MessageEditor({
 						{embeds.map((embed, index) => {
 							if (!embedHasPreview(embed)) return null
 							const color = resolveEmbedColor(embed.color, defaultEmbedColor)
+							const previewAuthor = renderPreviewText(
+								embed.authorName || "",
+								PREVIEW_VARS,
+							)
 							const previewTitle = renderPreviewText(
 								embed.title || (index === 0 ? title : ""),
 								PREVIEW_VARS,
@@ -477,23 +626,102 @@ export default function MessageEditor({
 								embed.description || "",
 								PREVIEW_VARS,
 							)
+							const previewFooter = renderPreviewText(
+								embed.footerText || "",
+								PREVIEW_VARS,
+							)
+							const fieldRows = groupEmbedFields(embed.fields ?? [])
 							return (
 								<div
 									key={index}
 									className="msg-embed"
 									style={{ borderColor: color }}
 								>
-									{embed.authorName ? (
-										<div className="embed-author">{embed.authorName}</div>
+									{previewAuthor ? (
+										<div className="embed-author">
+											{embed.authorIconUrl ? (
+												<img
+													src={embed.authorIconUrl}
+													alt=""
+													width={24}
+													height={24}
+												/>
+											) : null}
+											<MarkdownText
+												as="span"
+												className="embed-author-name"
+												text={previewAuthor}
+												mode="inline"
+											/>
+										</div>
 									) : null}
 									{previewTitle ? (
-										<MarkdownText className="embed-title" text={previewTitle} />
+										<MarkdownText
+											className="embed-title"
+											text={previewTitle}
+											mode="inline"
+										/>
 									) : null}
 									{previewDesc ? (
 										<MarkdownText className="embed-desc" text={previewDesc} />
 									) : null}
+									{fieldRows.length ? (
+										<div className="embed-fields-grid">
+											{fieldRows.map((row, rowIndex) => {
+												const isInlineRow = row.every((f) => f.inline)
+												return (
+													<div
+														key={rowIndex}
+														className={`embed-fields-row${isInlineRow ? " inline" : ""}`}
+													>
+														{row.map((field, fieldIndex) => (
+															<div key={fieldIndex} className="embed-field">
+																{field.name ? (
+																	<MarkdownText
+																		className="field-name"
+																		text={renderPreviewText(
+																			field.name,
+																			PREVIEW_VARS,
+																		)}
+																		mode="inline"
+																	/>
+																) : null}
+																{field.value ? (
+																	<MarkdownText
+																		className="field-value"
+																		text={renderPreviewText(
+																			field.value,
+																			PREVIEW_VARS,
+																		)}
+																	/>
+																) : null}
+															</div>
+														))}
+													</div>
+												)
+											})}
+										</div>
+									) : null}
 									{embed.imageUrl ? (
 										<img className="embed-image" src={embed.imageUrl} alt="" />
+									) : null}
+									{previewFooter ? (
+										<div className="embed-footer">
+											{embed.footerIconUrl ? (
+												<img
+													src={embed.footerIconUrl}
+													alt=""
+													width={20}
+													height={20}
+												/>
+											) : null}
+											<MarkdownText
+												as="span"
+												className="embed-footer-text"
+												text={previewFooter}
+												mode="inline"
+											/>
+										</div>
 									) : null}
 								</div>
 							)

@@ -157,6 +157,24 @@ class Settings(cog.Cog):
                 icon_url=embed_cfg.get("footerIconUrl") or None,
             )
 
+        fields = embed_cfg.get("fields")
+        if isinstance(fields, list):
+            for field in fields[:25]:
+                if not isinstance(field, dict):
+                    continue
+                name = field.get("name")
+                value = field.get("value")
+                if not name and not value:
+                    continue
+                try:
+                    embed.add_field(
+                        name=self._render_template(str(name or "\u200b"), member),
+                        value=self._render_template(str(value or "\u200b"), member),
+                        inline=bool(field.get("inline")),
+                    )
+                except Exception:
+                    pass
+
         thumbnail = embed_cfg.get("thumbnailUrl") or embed_cfg.get("thumbnail")
         if thumbnail:
             try:

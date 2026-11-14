@@ -114,9 +114,25 @@
 			box-sizing: border-box;
 
 			> .embed-author {
+				display: flex;
+				align-items: center;
+				gap: 8px;
 				font-size: 0.8125rem;
 				font-weight: 600;
 				overflow-wrap: anywhere;
+
+				> img {
+					width: 24px;
+					height: 24px;
+					border-radius: 50%;
+					object-fit: cover;
+					flex-shrink: 0;
+				}
+
+				> .embed-author-name {
+					min-width: 0;
+					overflow-wrap: anywhere;
+				}
 			}
 
 			> .embed-title,
@@ -212,6 +228,46 @@
 				}
 			}
 
+			> .embed-fields-grid {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				min-width: 0;
+
+				> .embed-fields-row {
+					display: grid;
+					grid-template-columns: 1fr;
+					gap: 8px;
+					min-width: 0;
+
+					/* Discord: inline fields sit in a fixed 3-column track */
+					&.inline {
+						grid-template-columns: repeat(3, minmax(0, 1fr));
+					}
+
+					> .embed-field {
+						min-width: 0;
+						font-family: var(--font-body);
+						font-size: 0.8125rem;
+						line-height: 1.4;
+						color: #dbdee1;
+
+						> .field-name {
+							display: block;
+							margin-bottom: 2px;
+							color: #fff;
+							font-weight: 600;
+							overflow-wrap: anywhere;
+						}
+
+						> .field-value {
+							overflow-wrap: anywhere;
+							white-space: pre-wrap;
+						}
+					}
+				}
+			}
+
 			> .embed-image {
 				width: 100%;
 				max-height: 180px;
@@ -221,6 +277,30 @@
 				&.placeholder {
 					height: 120px;
 					background: linear-gradient(135deg, #3a3a3a, #1f1f1f);
+				}
+			}
+
+			> .embed-footer {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-top: 2px;
+				font-size: 0.75rem;
+				line-height: 1.25;
+				color: #dbdee1;
+				overflow-wrap: anywhere;
+
+				> img {
+					width: 20px;
+					height: 20px;
+					border-radius: 50%;
+					object-fit: cover;
+					flex-shrink: 0;
+				}
+
+				> .embed-footer-text {
+					min-width: 0;
+					overflow-wrap: anywhere;
 				}
 			}
 

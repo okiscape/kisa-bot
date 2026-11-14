@@ -6,13 +6,15 @@ export function FormRow({
 	label,
 	hint,
 	children,
+	column=null
 }: {
 	label: string
 	hint?: string
 	children: React.ReactNode
+	column: boolean | null
 }) {
 	return (
-		<div className="form-row">
+		<div className={`form-row${column ? ' col' : ""}`}>
 			<div className="label-col">
 				<span className="label">{label}</span>
 				{hint ? <span className="hint">{hint}</span> : null}

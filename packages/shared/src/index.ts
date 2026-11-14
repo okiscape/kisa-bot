@@ -74,6 +74,12 @@ export interface GuildChannel {
   parentId: string | null;
 }
 
+export interface MessageEmbedField {
+  name: string;
+  value: string;
+  inline: boolean;
+}
+
 export interface MessageEmbedConfig {
   title?: string | null;
   description?: string | null;
@@ -86,6 +92,7 @@ export interface MessageEmbedConfig {
   footerIconUrl?: string | null;
   thumbnailUrl?: string | null;
   imageUrl?: string | null;
+  fields?: MessageEmbedField[];
 }
 
 export interface MessageConfig {

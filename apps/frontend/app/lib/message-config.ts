@@ -1,3 +1,9 @@
+export type MessageEmbedField = {
+	name: string
+	value: string
+	inline: boolean
+}
+
 export type MessageEmbedConfig = {
 	title: string | null
 	description: string | null
@@ -10,6 +16,7 @@ export type MessageEmbedConfig = {
 	footerIconUrl: string | null
 	thumbnailUrl: string | null
 	imageUrl: string | null
+	fields: MessageEmbedField[]
 }
 
 export type MessageConfig = {
@@ -32,6 +39,14 @@ export type SettingsOptions = {
 	roles: Array<{ id: string; name: string; color: number; position: number }>
 }
 
+export function emptyEmbedField(): MessageEmbedField {
+	return {
+		name: "",
+		value: "",
+		inline: false,
+	}
+}
+
 export function emptyEmbed(): MessageEmbedConfig {
 	return {
 		title: null,
@@ -45,6 +60,7 @@ export function emptyEmbed(): MessageEmbedConfig {
 		footerIconUrl: null,
 		thumbnailUrl: null,
 		imageUrl: null,
+		fields: [],
 	}
 }
 

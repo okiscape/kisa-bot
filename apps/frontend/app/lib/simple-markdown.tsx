@@ -157,20 +157,42 @@ function parseBlocks(text: string): ReactNode[] {
 	return nodes
 }
 
-/** Discord-ish subset: headings, quotes, bold, italic, underline, strike, code, links. */
-export function parseSimpleMarkdown(text: string): ReactNode {
+/** Inline-only: bold/italic/etc + newlines. No headings or quotes. */
+function parseInlineOnly(text: string): ReactNode {
 	if (!text) return null
-	return parseBlocks(text)
+	const lines = text.split("\n")
+	return (
+		<span className="md-text">
+			{lines.map((line, idx) => (
+				<span key={idx}>
+					{idx > 0 ? "\n" : null}
+					{parseInline(line, idx * 100)}
+				</span>
+			))}
+		</span>
+	)
+}
+
+/** Discord-ish subset: headings, quotes, bold, italic, underline, strike, code, links. */
+export function parseSimpleMarkdown(
+	text: string,
+	mode: "blocks" | "inline" = "blocks",
+): ReactNode {
+	if (!text) return null
+	return mode === "inline" ? parseInlineOnly(text) : parseBlocks(text)
 }
 
 export function MarkdownText({
 	text,
 	as: Tag = "div",
 	className,
+	mode = "blocks",
 }: {
 	text: string
 	as?: "span" | "p" | "strong" | "div"
 	className?: string
+	/** `inline` disables headings and quotes (embed titles / author). */
+	mode?: "blocks" | "inline"
 }) {
-	return <Tag className={className}>{parseSimpleMarkdown(text)}</Tag>
+	return <Tag className={className}>{parseSimpleMarkdown(text, mode)}</Tag>
 }
