@@ -43,7 +43,6 @@ model ServerSettings {
   muteRole            BigInt?  @map("mute_role")
   autoRole            BigInt?  @map("auto_role")
   logChannel          BigInt?  @map("log_channel")
-  verifiedRole        BigInt?  @map("verified_role")
   ticketCategory      BigInt?  @map("ticket_category")
   fareText            String?  @map("fare_text") @db.Text
   fareColor           String?  @map("fare_color") @db.Text
@@ -56,12 +55,10 @@ model ServerSettings {
   customGreet         String?  @map("custom_greet") @db.Text
   customFare          String?  @map("custom_fare") @db.Text
   notifyText          String?  @map("notify_text") @db.Text
-  collectMetrics      Boolean? @map("collect_metrics")
   greetingConfig      Json?    @map("greeting_config")
   farewellConfig      Json?    @map("farewell_config")
   loggingConfig       Json?    @map("logging_config")
   honeypotChannel     BigInt?  @map("honeypot_channel")
-  reactionRoles       Json?    @map("reaction_roles")
 
   @@map("server_settings")
 }

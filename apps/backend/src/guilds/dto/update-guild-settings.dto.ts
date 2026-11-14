@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -123,6 +124,7 @@ export class MessageConfigDto {
 
   @ApiPropertyOptional({ type: [MessageEmbedConfigDto] })
   @IsArray()
+  @ArrayMaxSize(5)
   @ValidateNested({ each: true })
   @Type(() => MessageEmbedConfigDto)
   embeds!: MessageEmbedConfigDto[];
@@ -151,23 +153,6 @@ export class LoggingRuleDto {
   @IsArray()
   @IsString({ each: true })
   ignoreItems!: string[];
-}
-
-export class ReactionRoleDto {
-  @ApiPropertyOptional()
-  @IsString()
-  @MaxLength(64)
-  emoji!: string;
-
-  @ApiPropertyOptional()
-  @Matches(SNOWFLAKE)
-  roleId!: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined)
-  @Matches(SNOWFLAKE)
-  messageId?: string | null;
 }
 
 export class UpdateGuildSettingsDto {
@@ -243,12 +228,6 @@ export class UpdateGuildSettingsDto {
   @IsOptional()
   @ValidateIf((_, v) => v !== null && v !== undefined)
   @Matches(SNOWFLAKE)
-  verifiedRole?: string | null;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined)
-  @Matches(SNOWFLAKE)
   ticketCategory?: string | null;
 
   @ApiPropertyOptional()
@@ -319,11 +298,6 @@ export class UpdateGuildSettingsDto {
   @MaxLength(2000)
   notifyText?: string | null;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  collectMetrics?: boolean | null;
-
   @ApiPropertyOptional({ type: MessageConfigDto })
   @IsOptional()
   @ValidateNested()
@@ -348,11 +322,4 @@ export class UpdateGuildSettingsDto {
   @ValidateIf((_, v) => v !== null && v !== undefined)
   @Matches(SNOWFLAKE)
   honeypotChannel?: string | null;
-
-  @ApiPropertyOptional({ type: [ReactionRoleDto] })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ReactionRoleDto)
-  reactionRoles?: ReactionRoleDto[] | null;
 }

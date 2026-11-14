@@ -238,7 +238,7 @@ class Settings(cog.Cog):
                 )
             )
         else:
-            for embed_cfg in embeds_cfg[:10]:
+            for embed_cfg in embeds_cfg[:5]:
                 if not isinstance(embed_cfg, dict):
                     continue
                 embeds.append(

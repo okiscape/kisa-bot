@@ -9,13 +9,11 @@ import {
 import {
   LoggingRule,
   normalizeLoggingConfig,
-  normalizeReactionRoles,
-  ReactionRole,
   synthesizeLoggingConfig,
 } from "./logging-config";
 
 export type { MessageConfig } from "./message-config";
-export type { LoggingRule, ReactionRole } from "./logging-config";
+export type { LoggingRule } from "./logging-config";
 
 export type GuildSettingsDto = {
   guildId: string;
@@ -30,7 +28,6 @@ export type GuildSettingsDto = {
   muteRole: string | null;
   autoRole: string | null;
   logChannel: string | null;
-  verifiedRole: string | null;
   ticketCategory: string | null;
   fareText: string | null;
   fareColor: string | null;
@@ -43,12 +40,10 @@ export type GuildSettingsDto = {
   customGreet: string | null;
   customFare: string | null;
   notifyText: string | null;
-  collectMetrics: boolean | null;
   greetingConfig: MessageConfig;
   farewellConfig: MessageConfig;
   loggingConfig: LoggingRule[];
   honeypotChannel: string | null;
-  reactionRoles: ReactionRole[];
 };
 
 export const SUPPORTED_LANGUAGES = ["en", "en_US", "ru"] as const;
@@ -74,7 +69,6 @@ export function defaultGuildSettings(guildId: string): GuildSettingsDto {
     muteRole: null,
     autoRole: null,
     logChannel: null,
-    verifiedRole: null,
     ticketCategory: null,
     fareText: null,
     fareColor: null,
@@ -87,12 +81,10 @@ export function defaultGuildSettings(guildId: string): GuildSettingsDto {
     customGreet: null,
     customFare: null,
     notifyText: null,
-    collectMetrics: null,
     greetingConfig: emptyMessageConfig(),
     farewellConfig: emptyMessageConfig(),
     loggingConfig: [],
     honeypotChannel: null,
-    reactionRoles: [],
   };
 }
 
@@ -132,7 +124,6 @@ export function mergeGuildSettings(
     muteRole: snowflake(row.muteRole),
     autoRole: snowflake(row.autoRole),
     logChannel: snowflake(row.logChannel),
-    verifiedRole: snowflake(row.verifiedRole),
     ticketCategory: snowflake(row.ticketCategory),
     fareText,
     fareColor,
@@ -145,7 +136,6 @@ export function mergeGuildSettings(
     customGreet,
     customFare,
     notifyText: row.notifyText ?? defaults.notifyText,
-    collectMetrics: row.collectMetrics ?? defaults.collectMetrics,
     greetingConfig:
       normalizeMessageConfig(row.greetingConfig) ??
       synthesizeGreetingConfig({
@@ -168,6 +158,5 @@ export function mergeGuildSettings(
       normalizeLoggingConfig(row.loggingConfig) ??
       synthesizeLoggingConfig(snowflake(row.logChannel)),
     honeypotChannel: snowflake(row.honeypotChannel),
-    reactionRoles: normalizeReactionRoles(row.reactionRoles) ?? [],
   };
 }

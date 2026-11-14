@@ -37,6 +37,8 @@ describe("GuildsService discovery mapping", () => {
         const bits = BigInt(g.permissions);
         return (bits & 0x8n) !== 0n || (bits & 0x20n) !== 0n;
       },
+      getCachedUserGuilds: jest.fn(async () => discord.getUserGuilds()),
+      getCachedBotGuildIds: jest.fn(async () => discord.getBotGuildIds()),
     };
 
     service = new GuildsService(

@@ -8,10 +8,10 @@ import type { GuildDetail, GuildSettings } from "@/lib/guild-settings"
 import "./overview.css"
 
 const LINKS = [
-	{ href: "greeting", label: "Greeting", desc: "Join and leave messages" },
+	{ href: "greeting", label: "Greeting", desc: "Join messages and auto role" },
 	{ href: "moderation", label: "Moderation", desc: "Bad words and mute role" },
 	{ href: "logging", label: "Logging", desc: "Event log destinations" },
-	{ href: "other", label: "Other", desc: "Roles, tickets, metrics" },
+	{ href: "other", label: "Other", desc: "Tickets, private rooms, honeypot" },
 ] as const
 
 export default function OverviewPage() {
@@ -84,8 +84,8 @@ export default function OverviewPage() {
 					<span>Log rules</span>
 				</div>
 				<div className="stat">
-					<strong>{settings?.collectMetrics ? "On" : "Off"}</strong>
-					<span>Metrics</span>
+					<strong>{settings?.autoRole ? "Set" : "—"}</strong>
+					<span>Auto role</span>
 				</div>
 			</section>
 

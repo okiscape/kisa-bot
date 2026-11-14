@@ -29,6 +29,8 @@ const PREVIEW_VARS = {
 	channel: "#general",
 }
 
+const MAX_EMBEDS = 5
+
 type Props = {
 	title: string
 	value: MessageConfig
@@ -40,6 +42,23 @@ type Props = {
 	saving: boolean
 	dirty: boolean
 	status: string | null
+	autoRole?: string | null
+	onAutoRoleChange?: (roleId: string | null) => void
+}
+
+function resolveEmbedColor(color: string | null | undefined, fallback: string) {
+	if (!color) return fallback
+	return color.startsWith("#") ? color : `#${color}`
+}
+
+function embedHasPreview(embed: MessageEmbedConfig) {
+	return Boolean(
+		embed.title ||
+			embed.description ||
+			embed.imageUrl ||
+			embed.authorName ||
+			embed.url,
+	)
 }
 
 export default function MessageEditor({
@@ -53,27 +72,57 @@ export default function MessageEditor({
 	saving,
 	dirty,
 	status,
+	autoRole,
+	onAutoRoleChange,
 }: Props) {
-	const [embedOpen, setEmbedOpen] = useState(true)
+	const [openEmbeds, setOpenEmbeds] = useState<Record<number, boolean>>({ 0: true })
 	const channels = (options?.channels ?? [])
 		.filter((c) => TEXTISH_CHANNEL_TYPES.has(c.type))
 		.sort((a, b) => a.position - b.position)
-		.map((c) => ({ value: c.id, label: `#${c.name}` }))
-
-	const embed: MessageEmbedConfig = value.embeds[0] ?? {
-		...emptyEmbed(),
-		color: defaultEmbedColor,
-	}
+		.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` }))
+	const roles = (options?.roles ?? [])
+		.slice()
+		.sort((a, b) => b.position - a.position)
+		.map((r) => ({ value: r.id, label: `${r.name} (${r.id})` }))
+	const showAutoRole = onAutoRoleChange !== undefined
+	const showSettings = value.enabled
+	const embeds = value.embeds
 
 	function patch(partial: Partial<MessageConfig>) {
 		onChange({ ...value, ...partial })
 	}
 
-	function patchEmbed(partial: Partial<MessageEmbedConfig>) {
-		const nextEmbed = { ...embed, ...partial }
-		const embeds = value.embeds.length ? [...value.embeds] : [nextEmbed]
-		embeds[0] = nextEmbed
-		patch({ embeds })
+	function patchEmbed(index: number, partial: Partial<MessageEmbedConfig>) {
+		const next = embeds.map((embed, i) =>
+			i === index ? { ...embed, ...partial } : embed,
+		)
+		patch({ embeds: next })
+	}
+
+	function addEmbed() {
+		if (embeds.length >= MAX_EMBEDS) return
+		const nextIndex = embeds.length
+		patch({
+			embeds: [...embeds, { ...emptyEmbed(), color: defaultEmbedColor }],
+		})
+		setOpenEmbeds((prev) => ({ ...prev, [nextIndex]: true }))
+	}
+
+	function removeEmbed(index: number) {
+		patch({ embeds: embeds.filter((_, i) => i !== index) })
+		setOpenEmbeds((prev) => {
+			const next: Record<number, boolean> = {}
+			for (const [key, open] of Object.entries(prev)) {
+				const i = Number(key)
+				if (i < index) next[i] = open
+				else if (i > index) next[i - 1] = open
+			}
+			return next
+		})
+	}
+
+	function toggleEmbed(index: number) {
+		setOpenEmbeds((prev) => ({ ...prev, [index]: !prev[index] }))
 	}
 
 	function insertVar(token: string) {
@@ -81,16 +130,9 @@ export default function MessageEditor({
 	}
 
 	const previewContent = renderPreviewText(value.content, PREVIEW_VARS)
-	const previewTitle = renderPreviewText(embed.title || title, PREVIEW_VARS)
-	const previewDesc = renderPreviewText(embed.description || "", PREVIEW_VARS)
-	const previewColor = embed.color?.startsWith("#")
-		? embed.color
-		: embed.color
-			? `#${embed.color}`
-			: defaultEmbedColor
 
 	return (
-		<div className="editor">
+		<div className={`editor${showSettings ? "" : " disabled"}`}>
 			<div className="form">
 				<div className="enable">
 					<div>
@@ -104,146 +146,207 @@ export default function MessageEditor({
 					/>
 				</div>
 
-				<FormRow label="Sent by" hint="Bot account or custom webhook.">
-					<Segmented
-						value={value.sender}
-						options={[
-							{ id: "bot", label: "Bot" },
-							{ id: "webhook", label: "Webhook" },
-						]}
-						onChange={(sender) => patch({ sender })}
-					/>
-				</FormRow>
-
-				{value.sender === "webhook" ? (
-					<FormRow label="Webhook" hint="HTTPS Discord webhook URL.">
-						<input
-							className="webhook-input"
-							type="url"
-							placeholder="https://discord.com/api/webhooks/…"
-							value={value.webhookUrl ?? ""}
-							onChange={(e) => patch({ webhookUrl: e.target.value || null })}
+				{showAutoRole && onAutoRoleChange ? (
+					<FormRow label="Auto role" hint="Given automatically when someone joins.">
+						<SelectField
+							value={autoRole ?? null}
+							onChange={onAutoRoleChange}
+							options={roles}
+							placeholder="Select role"
 						/>
 					</FormRow>
 				) : null}
 
-				<FormRow label="Channel" hint="Where the message is posted.">
-					<SelectField
-						value={value.channelId}
-						onChange={(channelId) => patch({ channelId })}
-						options={channels}
-						placeholder="Select channel"
-					/>
-				</FormRow>
-
-				<FormRow label="Message" hint="Plain text above the embed.">
-					<TextAreaField
-						value={value.content}
-						onChange={(content) => patch({ content })}
-						placeholder="Welcome {{mention}}!"
-					/>
-					<div className="var-chips">
-						{TEMPLATE_VARS.map((v) => (
-							<button
-								key={v.key}
-								type="button"
-								className="chip"
-								onClick={() => insertVar(v.label)}
-							>
-								{v.label}
-							</button>
-						))}
-					</div>
-				</FormRow>
-
-				<FormRow label="Embed" hint="Optional rich card under the message.">
-					<button
-						type="button"
-						className="embed-toggle"
-						onClick={() => setEmbedOpen((o) => !o)}
-					>
-						<span>Embed #1</span>
-						<span className={`chevron${embedOpen ? " open" : ""}`}>▾</span>
-					</button>
-
-					{embedOpen ? (
-						<div className="embed-fields">
-							<div className="stack-grid">
-								<TextField
-									label="Author"
-									value={embed.authorName ?? ""}
-									onChange={(authorName) =>
-										patchEmbed({ authorName: authorName || null })
-									}
-								/>
-								<TextField
-									label="Icon URL"
-									value={embed.authorIconUrl ?? ""}
-									onChange={(authorIconUrl) =>
-										patchEmbed({ authorIconUrl: authorIconUrl || null })
-									}
-								/>
-								<TextField
-									label="Title"
-									value={embed.title ?? ""}
-									onChange={(titleValue) =>
-										patchEmbed({ title: titleValue || null })
-									}
-								/>
-								<TextField
-									label="Title URL"
-									value={embed.url ?? ""}
-									onChange={(url) => patchEmbed({ url: url || null })}
-								/>
-							</div>
-							<TextAreaField
-								value={embed.description ?? ""}
-								onChange={(description) =>
-									patchEmbed({ description: description || null })
-								}
-								maxLength={4096}
-								placeholder="Embed description"
+				{showSettings ? (
+					<>
+						<FormRow label="Sent by" hint="Bot account or custom webhook.">
+							<Segmented
+								value={value.sender}
+								options={[
+									{ id: "bot", label: "Bot" },
+									{ id: "webhook", label: "Webhook" },
+								]}
+								onChange={(sender) => patch({ sender })}
 							/>
-							<div className="stack-grid">
-								<TextField
-									label="Image"
-									value={embed.imageUrl ?? ""}
-									onChange={(imageUrl) =>
-										patchEmbed({ imageUrl: imageUrl || null })
+						</FormRow>
+
+						{value.sender === "webhook" ? (
+							<FormRow label="Webhook" hint="HTTPS Discord webhook URL.">
+								<input
+									className="webhook-input"
+									type="url"
+									placeholder="https://discord.com/api/webhooks/…"
+									value={value.webhookUrl ?? ""}
+									onChange={(e) =>
+										patch({ webhookUrl: e.target.value || null })
 									}
 								/>
-								<label className="text-field color">
-									<span>Color</span>
-									<input
-										type="color"
-										value={previewColor}
-										onChange={(e) => patchEmbed({ color: e.target.value })}
-									/>
-									<input
-										type="text"
-										value={embed.color ?? ""}
-										onChange={(e) =>
-											patchEmbed({ color: e.target.value || null })
-										}
-									/>
-								</label>
+							</FormRow>
+						) : null}
+
+						<FormRow label="Channel" hint="Where the message is posted.">
+							<SelectField
+								value={value.channelId}
+								onChange={(channelId) => patch({ channelId })}
+								options={channels}
+								placeholder="Select channel"
+							/>
+						</FormRow>
+
+						<FormRow label="Message" hint="Plain text above the embed.">
+							<TextAreaField
+								value={value.content}
+								onChange={(content) => patch({ content })}
+								placeholder="Welcome {{mention}}!"
+							/>
+							<div className="var-chips">
+								{TEMPLATE_VARS.map((v) => (
+									<button
+										key={v.key}
+										type="button"
+										className="chip"
+										onClick={() => insertVar(v.label)}
+									>
+										{v.label}
+									</button>
+								))}
 							</div>
-							{value.embeds.length === 0 ? (
-								<button
-									type="button"
-									className="add-embed"
-									onClick={() =>
-										patch({
-											embeds: [{ ...emptyEmbed(), color: defaultEmbedColor }],
-										})
-									}
-								>
-									Add embed
-								</button>
-							) : null}
-						</div>
-					) : null}
-				</FormRow>
+						</FormRow>
+
+						<FormRow
+							label="Embeds"
+							hint={`Optional rich cards under the message (up to ${MAX_EMBEDS}).`}
+						>
+							<div className="embed-list">
+								{embeds.map((embed, index) => {
+									const open = openEmbeds[index] ?? false
+									const color = resolveEmbedColor(
+										embed.color,
+										defaultEmbedColor,
+									)
+									return (
+										<div key={index} className="embed-panel">
+											<div className="embed-panel-head">
+												<button
+													type="button"
+													className="embed-toggle"
+													onClick={() => toggleEmbed(index)}
+												>
+													<span>Embed #{index + 1}</span>
+													<span className={`chevron${open ? " open" : ""}`}>
+														▾
+													</span>
+												</button>
+												<button
+													type="button"
+													className="remove-embed"
+													onClick={() => removeEmbed(index)}
+												>
+													Remove
+												</button>
+											</div>
+
+											{open ? (
+												<div className="embed-fields">
+													<div className="stack-grid">
+														<TextField
+															label="Author"
+															value={embed.authorName ?? ""}
+															onChange={(authorName) =>
+																patchEmbed(index, {
+																	authorName: authorName || null,
+																})
+															}
+														/>
+														<TextField
+															label="Icon URL"
+															value={embed.authorIconUrl ?? ""}
+															onChange={(authorIconUrl) =>
+																patchEmbed(index, {
+																	authorIconUrl: authorIconUrl || null,
+																})
+															}
+														/>
+														<TextField
+															label="Title"
+															value={embed.title ?? ""}
+															onChange={(titleValue) =>
+																patchEmbed(index, {
+																	title: titleValue || null,
+																})
+															}
+														/>
+														<TextField
+															label="Title URL"
+															value={embed.url ?? ""}
+															onChange={(url) =>
+																patchEmbed(index, {
+																	url: url || null,
+																})
+															}
+														/>
+													</div>
+													<TextAreaField
+														value={embed.description ?? ""}
+														onChange={(description) =>
+															patchEmbed(index, {
+																description: description || null,
+															})
+														}
+														maxLength={4096}
+														placeholder="Embed description"
+													/>
+													<div className="stack-grid">
+														<TextField
+															label="Image"
+															value={embed.imageUrl ?? ""}
+															onChange={(imageUrl) =>
+																patchEmbed(index, {
+																	imageUrl: imageUrl || null,
+																})
+															}
+														/>
+														<label className="text-field color">
+															<span>Color</span>
+															<input
+																type="color"
+																value={color}
+																onChange={(e) =>
+																	patchEmbed(index, {
+																		color: e.target.value,
+																	})
+																}
+															/>
+															<input
+																type="text"
+																value={embed.color ?? ""}
+																onChange={(e) =>
+																	patchEmbed(index, {
+																		color: e.target.value || null,
+																	})
+																}
+															/>
+														</label>
+													</div>
+												</div>
+											) : null}
+										</div>
+									)
+								})}
+
+								{embeds.length < MAX_EMBEDS ? (
+									<button
+										type="button"
+										className="add-embed"
+										onClick={addEmbed}
+									>
+										Add embed
+									</button>
+								) : null}
+							</div>
+						</FormRow>
+					</>
+				) : null}
 
 				<SettingsSaveBar
 					dirty={dirty}
@@ -254,43 +357,61 @@ export default function MessageEditor({
 				/>
 			</div>
 
-			<aside className="discord-preview">
-				<div className="side-head">
-					<strong>Preview</strong>
-					<span>Live Discord-style</span>
-				</div>
-				<div className="discord-msg">
-					<div className="msg-head">
-						<BotAvatar />
-						<div>
-							<div className="name-row">
-								<strong>kisa</strong>
-								<span className="bot-tag">BOT</span>
-							</div>
-							<span className="time">Today at 12:00</span>
-						</div>
+			{showSettings ? (
+				<aside className="discord-preview">
+					<div className="side-head">
+						<strong>Preview</strong>
+						<span>Live Discord-style</span>
 					</div>
-					{previewContent ? (
-						<MarkdownText className="msg-content" text={previewContent} />
-					) : null}
-					{embed.title || embed.description || embed.imageUrl ? (
-						<div className="msg-embed" style={{ borderColor: previewColor }}>
-							{embed.authorName ? (
-								<div className="embed-author">{embed.authorName}</div>
-							) : null}
-							{previewTitle ? (
-								<MarkdownText className="embed-title" text={previewTitle} />
-							) : null}
-							{previewDesc ? (
-								<MarkdownText className="embed-desc" text={previewDesc} />
-							) : null}
-							{embed.imageUrl ? (
-								<img className="embed-image" src={embed.imageUrl} alt="" />
-							) : null}
+					<div className="discord-msg">
+						<div className="msg-head">
+							<BotAvatar />
+							<div>
+								<div className="name-row">
+									<strong>kisa</strong>
+									<span className="bot-tag">BOT</span>
+								</div>
+								<span className="time">Today at 12:00</span>
+							</div>
 						</div>
-					) : null}
-				</div>
-			</aside>
+						{previewContent ? (
+							<MarkdownText className="msg-content" text={previewContent} />
+						) : null}
+						{embeds.map((embed, index) => {
+							if (!embedHasPreview(embed)) return null
+							const color = resolveEmbedColor(embed.color, defaultEmbedColor)
+							const previewTitle = renderPreviewText(
+								embed.title || (index === 0 ? title : ""),
+								PREVIEW_VARS,
+							)
+							const previewDesc = renderPreviewText(
+								embed.description || "",
+								PREVIEW_VARS,
+							)
+							return (
+								<div
+									key={index}
+									className="msg-embed"
+									style={{ borderColor: color }}
+								>
+									{embed.authorName ? (
+										<div className="embed-author">{embed.authorName}</div>
+									) : null}
+									{previewTitle ? (
+										<MarkdownText className="embed-title" text={previewTitle} />
+									) : null}
+									{previewDesc ? (
+										<MarkdownText className="embed-desc" text={previewDesc} />
+									) : null}
+									{embed.imageUrl ? (
+										<img className="embed-image" src={embed.imageUrl} alt="" />
+									) : null}
+								</div>
+							)
+						})}
+					</div>
+				</aside>
+			) : null}
 		</div>
 	)
 }

@@ -112,6 +112,16 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const cookieName = this.sessions.getCookieName();
     const sessionId = req.cookies?.[cookieName] as string | undefined;
+    if (sessionId) {
+      try {
+        const active = await this.sessions.resolveActiveSession(sessionId);
+        await this.authService.invalidateDiscordUserCaches(
+          String(active.session.userId),
+        );
+      } catch {
+        // Session already gone — still clear cookie below.
+      }
+    }
     await this.sessions.revoke(sessionId);
     this.sessions.clearSessionCookie(res);
     // Also clear legacy cookie if present

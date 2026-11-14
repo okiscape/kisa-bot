@@ -24,6 +24,8 @@ export default function GreetingPage() {
 	const [farewell, setFarewell] = useState<MessageConfig>(emptyMessageConfig())
 	const [savedGreeting, setSavedGreeting] = useState<MessageConfig>(emptyMessageConfig())
 	const [savedFarewell, setSavedFarewell] = useState<MessageConfig>(emptyMessageConfig())
+	const [autoRole, setAutoRole] = useState<string | null>(null)
+	const [savedAutoRole, setSavedAutoRole] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -43,6 +45,8 @@ export default function GreetingPage() {
 			setFarewell(f)
 			setSavedGreeting(g)
 			setSavedFarewell(f)
+			setAutoRole(settings.autoRole)
+			setSavedAutoRole(settings.autoRole)
 			setOptions(opts)
 		} catch {
 			setError("Could not load greeting settings.")
@@ -57,10 +61,11 @@ export default function GreetingPage() {
 
 	const active = tab === "greeting" ? greeting : farewell
 	const saved = tab === "greeting" ? savedGreeting : savedFarewell
-	const dirty = useMemo(
-		() => JSON.stringify(active) !== JSON.stringify(saved),
-		[active, saved],
-	)
+	const dirty = useMemo(() => {
+		const messageDirty = JSON.stringify(active) !== JSON.stringify(saved)
+		if (tab !== "greeting") return messageDirty
+		return messageDirty || autoRole !== savedAutoRole
+	}, [active, saved, tab, autoRole, savedAutoRole])
 
 	async function save() {
 		setSaving(true)
@@ -68,7 +73,7 @@ export default function GreetingPage() {
 		try {
 			const body =
 				tab === "greeting"
-					? { greetingConfig: greeting }
+					? { greetingConfig: greeting, autoRole }
 					: { farewellConfig: farewell }
 			const updated = await apiFetch<GuildSettings>(`/guilds/${guildId}/settings`, {
 				method: "PATCH",
@@ -80,6 +85,8 @@ export default function GreetingPage() {
 			setFarewell(f)
 			setSavedGreeting(g)
 			setSavedFarewell(f)
+			setAutoRole(updated.autoRole)
+			setSavedAutoRole(updated.autoRole)
 			setStatus("Saved")
 		} catch {
 			setStatus("Save failed")
@@ -89,8 +96,12 @@ export default function GreetingPage() {
 	}
 
 	function reset() {
-		if (tab === "greeting") setGreeting(savedGreeting)
-		else setFarewell(savedFarewell)
+		if (tab === "greeting") {
+			setGreeting(savedGreeting)
+			setAutoRole(savedAutoRole)
+		} else {
+			setFarewell(savedFarewell)
+		}
 		setStatus(null)
 	}
 
@@ -137,7 +148,7 @@ export default function GreetingPage() {
 				</div>
 				<p className="lead">
 					{tab === "greeting"
-						? "Message posted when someone joins the server."
+						? "Welcome message and auto role when someone joins."
 						: "Message posted when someone leaves the server."}
 				</p>
 			</header>
@@ -154,6 +165,9 @@ export default function GreetingPage() {
 				saving={saving}
 				dirty={dirty}
 				status={status}
+				{...(tab === "greeting"
+					? { autoRole, onAutoRoleChange: setAutoRole }
+					: {})}
 			/>
 		</div>
 	)

@@ -41,26 +41,3 @@ export function synthesizeLoggingConfig(logChannel: string | null): LoggingRule[
     },
   ];
 }
-
-export type ReactionRole = {
-  emoji: string;
-  roleId: string;
-  messageId: string | null;
-};
-
-export function normalizeReactionRoles(raw: unknown): ReactionRole[] | null {
-  if (raw == null) return null;
-  if (!Array.isArray(raw)) return null;
-  return raw
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
-    .map((item) => ({
-      emoji: typeof item.emoji === "string" ? item.emoji : "",
-      roleId: typeof item.roleId === "string" ? item.roleId : "",
-      messageId:
-        typeof item.messageId === "string" && item.messageId.trim()
-          ? item.messageId.trim()
-          : null,
-    }))
-    .filter((item) => item.emoji && item.roleId)
-    .slice(0, 100);
-}

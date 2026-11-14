@@ -12,6 +12,17 @@ import {
 } from "../discord/discord-api.client";
 import { DiscordApiGuild } from "../discord/discord.types";
 import { CacheService } from "../cache/cache.service";
+import {
+  DISCORD_BOT_GUILDS_STALE_SECONDS,
+  DISCORD_BOT_GUILDS_TTL_SECONDS,
+  DISCORD_USER_GUILDS_STALE_SECONDS,
+  DISCORD_USER_GUILDS_TTL_SECONDS,
+  DISCORD_USER_ME_STALE_SECONDS,
+  DISCORD_USER_ME_TTL_SECONDS,
+  discordBotGuildIdsCacheKey,
+  discordUserGuildsCacheKey,
+  discordUserMeCacheKey,
+} from "../cache/app-cache-keys";
 
 export type DiscordGuild = DiscordApiGuild;
 
@@ -59,14 +70,33 @@ export class AuthService {
     return this.discord.getCurrentUser(accessToken) as Promise<DiscordUser>;
   }
 
+  async getCachedUser(
+    accessToken: string,
+    userId: string,
+  ): Promise<DiscordUser> {
+    const { value } = await this.cache.getOrSet(
+      discordUserMeCacheKey(userId),
+      () => this.discord.getCurrentUser(accessToken) as Promise<DiscordUser>,
+      {
+        ttlSeconds: DISCORD_USER_ME_TTL_SECONDS,
+        staleSeconds: DISCORD_USER_ME_STALE_SECONDS,
+        staleIfError: true,
+      },
+    );
+    return value;
+  }
+
   /**
    * Refresh Discord access token if expired or Discord returns 401 once.
+   * Current-user profile is cached to avoid hitting /users/@me on every request.
    */
   async ensureFreshAccessToken(
     active: ActiveSession,
   ): Promise<{ accessToken: string; user: DiscordUser }> {
     let accessToken = active.accessToken;
     let refreshToken = active.refreshToken;
+    let didRefresh = false;
+    const userId = String(active.session.userId);
 
     const tryRefresh = async () => {
       if (!refreshToken) {
@@ -81,19 +111,28 @@ export class AuthService {
       await this.sessions.rotateTokens(active.session.id, refreshed);
       accessToken = refreshed.accessToken;
       refreshToken = refreshed.refreshToken ?? null;
+      didRefresh = true;
     };
 
     if (this.sessions.isAccessTokenExpired(active.session)) {
       await tryRefresh();
     }
 
+    const loadUser = async () => {
+      if (didRefresh) {
+        await this.cache.delete(discordUserMeCacheKey(userId));
+      }
+      return this.getCachedUser(accessToken, userId);
+    };
+
     try {
-      const user = await this.getUser(accessToken);
+      const user = await loadUser();
       return { accessToken, user };
     } catch (err) {
       if (err instanceof UnauthorizedException) {
         await tryRefresh();
-        const user = await this.getUser(accessToken);
+        await this.cache.delete(discordUserMeCacheKey(userId));
+        const user = await this.getCachedUser(accessToken, userId);
         return { accessToken, user };
       }
       throw err;
@@ -109,11 +148,36 @@ export class AuthService {
     userId: string,
   ): Promise<DiscordApiGuild[]> {
     const { value } = await this.cache.getOrSet(
-      `discord:user:${userId}:guilds`,
+      discordUserGuildsCacheKey(userId),
       () => this.discord.getUserGuilds(accessToken),
-      { ttlSeconds: 60, staleSeconds: 120, staleIfError: true },
+      {
+        ttlSeconds: DISCORD_USER_GUILDS_TTL_SECONDS,
+        staleSeconds: DISCORD_USER_GUILDS_STALE_SECONDS,
+        staleIfError: true,
+      },
     );
     return value;
+  }
+
+  async getCachedBotGuildIds(): Promise<string[]> {
+    const { value } = await this.cache.getOrSet(
+      discordBotGuildIdsCacheKey(),
+      () => this.discord.getBotGuildIds(),
+      {
+        ttlSeconds: DISCORD_BOT_GUILDS_TTL_SECONDS,
+        staleSeconds: DISCORD_BOT_GUILDS_STALE_SECONDS,
+        staleIfError: true,
+      },
+    );
+    return value;
+  }
+
+  /** Drop Discord caches for a user (logout / token revoke). */
+  async invalidateDiscordUserCaches(userId: string): Promise<void> {
+    await Promise.all([
+      this.cache.delete(discordUserMeCacheKey(userId)),
+      this.cache.delete(discordUserGuildsCacheKey(userId)),
+    ]);
   }
 
   hasRequiredPermission(guild: DiscordApiGuild): boolean {
@@ -146,13 +210,9 @@ export class AuthService {
       userId
         ? this.getCachedUserGuilds(accessToken, userId)
         : this.getUserGuilds(accessToken),
-      this.cache.getOrSet(
-        "discord:bot-guild-ids",
-        () => this.discord.getBotGuildIds(),
-        { ttlSeconds: 60, staleSeconds: 600, staleIfError: true },
-      ),
+      this.getCachedBotGuildIds(),
     ]);
-    const botSet = new Set(botGuildIds.value);
+    const botSet = new Set(botGuildIds);
 
     return userGuilds
       .filter((g) => this.hasRequiredPermission(g))

@@ -106,7 +106,7 @@ export default function LoggingPage() {
 
 	const channels = (options?.channels ?? [])
 		.filter((c) => c.type === 0 || c.type === 5)
-		.map((c) => ({ value: c.id, label: `#${c.name}` }))
+		.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` }))
 
 	return (
 		<div className="settings-page">

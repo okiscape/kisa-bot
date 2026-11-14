@@ -177,7 +177,6 @@ class ServerSettingsRecord:
         mute_role: int | None = None,
         auto_role: int | None = None,
         log_channel: int | None = None,
-        verified_role: int | None = None,
         ticket_category: int | None = None,
         fare_text: str | None = None,
         fare_color: str | None = None,
@@ -210,7 +209,6 @@ class ServerSettingsRecord:
         self.mute_role = mute_role
         self.auto_role = auto_role
         self.log_channel = log_channel
-        self.verified_role = verified_role
         self.ticket_category = ticket_category
         self.fare_text = fare_text
         self.fare_color = fare_color

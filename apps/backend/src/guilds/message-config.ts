@@ -73,7 +73,7 @@ export function normalizeMessageConfig(raw: unknown): MessageConfig | null {
     ? c.embeds
         .map(normalizeEmbed)
         .filter((e): e is MessageEmbedConfig => e !== null)
-        .slice(0, 10)
+        .slice(0, 5)
     : [];
 
   return {

@@ -23,10 +23,7 @@ import {
   defaultGuildSettings,
 } from "./guild-settings.defaults";
 import { normalizeMessageConfig } from "./message-config";
-import {
-  normalizeLoggingConfig,
-  normalizeReactionRoles,
-} from "./logging-config";
+import { normalizeLoggingConfig } from "./logging-config";
 import { guildSettingsCacheKey } from "../cache/app-cache-keys";
 
 const PERMISSIONS = {
@@ -49,7 +46,6 @@ const CHANNEL_FIELDS = [
 const ROLE_FIELDS = [
   "muteRole",
   "autoRole",
-  "verifiedRole",
 ] as const;
 
 export interface GuildDiscoveryItem {
@@ -77,7 +73,6 @@ const bigIntFields = [
   "muteRole",
   "autoRole",
   "logChannel",
-  "verifiedRole",
   "ticketCategory",
   "privateCrChannel",
   "privateCategory",
@@ -99,8 +94,8 @@ export class GuildsService {
     filter: "all" | "manageable" = "manageable",
   ): Promise<GuildDiscoveryItem[]> {
     const [userGuilds, botGuildIds] = await Promise.all([
-      this.getCachedUserGuilds(accessToken, userId),
-      this.getCachedBotGuildIds(),
+      this.auth.getCachedUserGuilds(accessToken, userId),
+      this.auth.getCachedBotGuildIds(),
     ]);
     const botSet = new Set(botGuildIds);
 
@@ -121,8 +116,8 @@ export class GuildsService {
     guildId: string,
   ): Promise<GuildDetail | null> {
     const [userGuilds, botGuildIds] = await Promise.all([
-      this.getCachedUserGuilds(accessToken, userId),
-      this.getCachedBotGuildIds(),
+      this.auth.getCachedUserGuilds(accessToken, userId),
+      this.auth.getCachedBotGuildIds(),
     ]);
     const guild = userGuilds.find((g) => g.id === guildId);
     if (!guild || !this.auth.hasRequiredPermission(guild)) {
@@ -168,7 +163,7 @@ export class GuildsService {
   }
 
   async isBotInstalled(guildId: string): Promise<boolean> {
-    const ids = await this.getCachedBotGuildIds();
+    const ids = await this.auth.getCachedBotGuildIds();
     return ids.includes(guildId);
   }
 
@@ -198,11 +193,6 @@ export class GuildsService {
       if (key === "loggingConfig") {
         processed[key] =
           value === null ? null : normalizeLoggingConfig(value);
-        continue;
-      }
-      if (key === "reactionRoles") {
-        processed[key] =
-          value === null ? null : normalizeReactionRoles(value);
         continue;
       }
       if (
@@ -321,11 +311,6 @@ export class GuildsService {
     const roleIds = ROLE_FIELDS.map((f) => dto[f]).filter(
       (v): v is string => typeof v === "string",
     );
-    if (Array.isArray(dto.reactionRoles)) {
-      for (const rule of dto.reactionRoles) {
-        if (typeof rule.roleId === "string") roleIds.push(rule.roleId);
-      }
-    }
 
     if (channelIds.length === 0 && roleIds.length === 0) return;
 
@@ -399,27 +384,6 @@ export class GuildsService {
     if (guild.owner) return true;
     const bits = BigInt(guild.permissions);
     return (bits & PERMISSIONS.ADMINISTRATOR) !== 0n;
-  }
-
-  private async getCachedUserGuilds(
-    accessToken: string,
-    userId: string,
-  ): Promise<DiscordApiGuild[]> {
-    const { value } = await this.cache.getOrSet(
-      `discord:user:${userId}:guilds`,
-      () => this.discord.getUserGuilds(accessToken),
-      { ttlSeconds: 60, staleSeconds: 120, staleIfError: true },
-    );
-    return value;
-  }
-
-  private async getCachedBotGuildIds(): Promise<string[]> {
-    const { value } = await this.cache.getOrSet(
-      "discord:bot-guild-ids",
-      () => this.discord.getBotGuildIds(),
-      { ttlSeconds: 60, staleSeconds: 600, staleIfError: true },
-    );
-    return value;
   }
 
   private async getCachedGuildMeta(guildId: string) {

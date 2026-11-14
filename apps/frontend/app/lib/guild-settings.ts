@@ -7,12 +7,6 @@ export type LoggingRule = {
 	ignoreItems: string[]
 }
 
-export type ReactionRole = {
-	emoji: string
-	roleId: string
-	messageId: string | null
-}
-
 export type GuildSettings = {
 	guildId: string
 	averageLanguage: string | null
@@ -26,7 +20,6 @@ export type GuildSettings = {
 	muteRole: string | null
 	autoRole: string | null
 	logChannel: string | null
-	verifiedRole: string | null
 	ticketCategory: string | null
 	fareText: string | null
 	fareColor: string | null
@@ -39,12 +32,10 @@ export type GuildSettings = {
 	customGreet: string | null
 	customFare: string | null
 	notifyText: string | null
-	collectMetrics: boolean | null
 	greetingConfig: MessageConfig
 	farewellConfig: MessageConfig
 	loggingConfig: LoggingRule[]
 	honeypotChannel: string | null
-	reactionRoles: ReactionRole[]
 }
 
 export type GuildDetail = {

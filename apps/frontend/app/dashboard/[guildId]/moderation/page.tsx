@@ -110,10 +110,10 @@ export default function ModerationPage() {
 	const roles = (options?.roles ?? [])
 		.slice()
 		.sort((a, b) => b.position - a.position)
-		.map((r) => ({ value: r.id, label: r.name }))
+		.map((r) => ({ value: r.id, label: `${r.name} (${r.id})` }))
 	const channels = (options?.channels ?? [])
 		.filter((c) => c.type === 0 || c.type === 5)
-		.map((c) => ({ value: c.id, label: `#${c.name}` }))
+		.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` }))
 
 	return (
 		<div className="settings-page">

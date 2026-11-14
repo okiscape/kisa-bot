@@ -8,7 +8,7 @@ describe("guild settings defaults", () => {
     const merged = mergeGuildSettings("123", null);
     expect(merged.guildId).toBe("123");
     expect(merged.notifyChannel).toBeNull();
-    expect(merged.collectMetrics).toBeNull();
+    expect(merged.honeypotChannel).toBeNull();
     expect(merged.greetingConfig.enabled).toBe(false);
     expect(merged.farewellConfig.enabled).toBe(false);
   });
@@ -27,7 +27,6 @@ describe("guild settings defaults", () => {
       muteRole: 1n,
       autoRole: null,
       logChannel: null,
-      verifiedRole: null,
       ticketCategory: null,
       fareText: null,
       fareColor: null,
@@ -40,18 +39,15 @@ describe("guild settings defaults", () => {
       customGreet: null,
       customFare: null,
       notifyText: null,
-      collectMetrics: true,
       greetingConfig: null,
       farewellConfig: null,
       loggingConfig: null,
       honeypotChannel: null,
-      reactionRoles: null,
     });
     expect(merged.notifyChannel).toBe("999");
     expect(merged.muteRole).toBe("1");
     expect(merged.greetText).toBe("hi {{mention}}");
     expect(merged.averageLanguage).toBe("ru");
-    expect(merged.collectMetrics).toBe(true);
     expect(merged.greetingConfig.enabled).toBe(true);
     expect(merged.greetingConfig.channelId).toBe("555");
     expect(merged.greetingConfig.embeds[0]?.description).toBe("hi {{mention}}");
@@ -71,7 +67,6 @@ describe("guild settings defaults", () => {
       muteRole: null,
       autoRole: null,
       logChannel: null,
-      verifiedRole: null,
       ticketCategory: null,
       fareText: null,
       fareColor: null,
@@ -84,7 +79,6 @@ describe("guild settings defaults", () => {
       customGreet: null,
       customFare: null,
       notifyText: null,
-      collectMetrics: null,
       greetingConfig: {
         enabled: true,
         channelId: "42",
@@ -96,7 +90,6 @@ describe("guild settings defaults", () => {
       farewellConfig: null,
       loggingConfig: null,
       honeypotChannel: null,
-      reactionRoles: null,
     });
     expect(merged.greetingConfig.sender).toBe("webhook");
     expect(merged.greetingConfig.channelId).toBe("42");
