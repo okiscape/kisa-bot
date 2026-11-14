@@ -96,6 +96,14 @@ db_schema = {
         "online": "BOOLEAN NOT NULL DEFAULT FALSE",
         "updated_at": "TIMESTAMPTZ NOT NULL DEFAULT NOW()",
     },
+    # Composite PK created in init_schema via raw SQL.
+    "guild_daily_metrics": {
+        "guild_id": "BIGINT NOT NULL",
+        "day": "DATE NOT NULL",
+        "messages": "INTEGER NOT NULL DEFAULT 0",
+        "joins": "INTEGER NOT NULL DEFAULT 0",
+        "leaves": "INTEGER NOT NULL DEFAULT 0",
+    },
 }
 # { table: {column-name: column-type} }
 
@@ -494,6 +502,36 @@ class DatabaseManager:
                 columns[column_name] = table[column_name]
 
             await self.db.createTable(table=table_name, columns=columns, alter=True)
+
+        # Composite primary key — createTable only emits single-column PKs.
+        try:
+            await self.db.execute(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'guild_daily_metrics_pkey'
+                  ) THEN
+                    ALTER TABLE guild_daily_metrics
+                      ADD CONSTRAINT guild_daily_metrics_pkey
+                      PRIMARY KEY (guild_id, day);
+                  END IF;
+                END $$;
+                """,
+                no_fetch=True,
+            )
+            await self.db.execute(
+                """
+                CREATE INDEX IF NOT EXISTS guild_daily_metrics_guild_id_day_idx
+                  ON guild_daily_metrics (guild_id, day)
+                """,
+                no_fetch=True,
+            )
+        except Exception as exc:
+            logging.warning(
+                "guild_daily_metrics pk/index setup failed", str(exc), type="DB"
+            )
 
         logging.info("schema ready", self.dsn, type="DB")
 
@@ -1352,4 +1390,33 @@ class DatabaseManager:
             )
         except Exception as exc:
             logging.warning("bot_metrics offline update failed", str(exc), type="DB")
+
+    async def increment_guild_daily_metrics(
+        self,
+        *,
+        guild_id: int,
+        day,
+        messages: int = 0,
+        joins: int = 0,
+        leaves: int = 0,
+    ) -> None:
+        """Add deltas to the UTC-day singleton row for a guild."""
+        if messages == 0 and joins == 0 and leaves == 0:
+            return
+        await self.db.execute(
+            """
+            INSERT INTO guild_daily_metrics (guild_id, day, messages, joins, leaves)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (guild_id, day) DO UPDATE SET
+              messages = guild_daily_metrics.messages + EXCLUDED.messages,
+              joins = guild_daily_metrics.joins + EXCLUDED.joins,
+              leaves = guild_daily_metrics.leaves + EXCLUDED.leaves
+            """,
+            guild_id,
+            day,
+            max(0, int(messages)),
+            max(0, int(joins)),
+            max(0, int(leaves)),
+            no_fetch=True,
+        )
 

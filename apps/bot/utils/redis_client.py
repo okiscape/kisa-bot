@@ -36,6 +36,17 @@ def user_profile_key(user_id: int | str) -> str:
     return f"app:user:{user_id}:profile"
 
 
+GUILD_METRICS_RANGES = ("week", "month", "6m", "year")
+
+
+def guild_metrics_key(guild_id: int | str, range_key: str) -> str:
+    return f"app:guild:{guild_id}:metrics:{range_key}"
+
+
+def guild_metrics_keys(guild_id: int | str) -> list[str]:
+    return [guild_metrics_key(guild_id, range_key) for range_key in GUILD_METRICS_RANGES]
+
+
 @dataclass(frozen=True)
 class RedisLookup:
     """Distinguish cache hit / miss from Redis being disabled or down."""

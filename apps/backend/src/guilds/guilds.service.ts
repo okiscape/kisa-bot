@@ -24,7 +24,54 @@ import {
 } from "./guild-settings.defaults";
 import { normalizeMessageConfig } from "./message-config";
 import { normalizeLoggingConfig } from "./logging-config";
-import { guildSettingsCacheKey } from "../cache/app-cache-keys";
+import {
+  GUILD_METRICS_CACHE_STALE_SECONDS,
+  GUILD_METRICS_CACHE_TTL_SECONDS,
+  GUILD_METRICS_RANGES,
+  GuildMetricsRange,
+  guildMetricsCacheKey,
+  guildSettingsCacheKey,
+} from "../cache/app-cache-keys";
+
+export type GuildDailyPoint = {
+  day: string;
+  messages: number;
+  joins: number;
+  leaves: number;
+};
+
+export type GuildMetricsResponse = {
+  range: GuildMetricsRange;
+  from: string;
+  to: string;
+  today: { messages: number; joins: number; leaves: number };
+  totals: { messages: number; joins: number; leaves: number };
+  points: GuildDailyPoint[];
+};
+
+const RANGE_DAYS: Record<GuildMetricsRange, number> = {
+  day: 1,
+  week: 7,
+  month: 30,
+  "6m": 180,
+  year: 365,
+};
+
+function utcDateString(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function startOfUtcDay(d = new Date()): Date {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+}
+
+function addUtcDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
 
 const PERMISSIONS = {
   ADMINISTRATOR: 0x8n,
@@ -293,6 +340,97 @@ export class GuildsService {
       name: webhook.name,
       avatarUrl: avatarUrl(webhook.id, webhook.avatar, 128),
       channelId: webhook.channelId,
+    };
+  }
+
+  parseMetricsRange(raw?: string): GuildMetricsRange {
+    if (raw && (GUILD_METRICS_RANGES as readonly string[]).includes(raw)) {
+      return raw as GuildMetricsRange;
+    }
+    return "month";
+  }
+
+  async getGuildMetrics(
+    guildId: string,
+    range: GuildMetricsRange,
+  ): Promise<{ data: GuildMetricsResponse; cache: "HIT" | "MISS" | "STALE" }> {
+    await this.requireBotInstalled(guildId);
+    const { value, cache } = await this.cache.getOrSet(
+      guildMetricsCacheKey(guildId, range),
+      () => this.readGuildMetrics(guildId, range),
+      {
+        ttlSeconds: GUILD_METRICS_CACHE_TTL_SECONDS,
+        staleSeconds: GUILD_METRICS_CACHE_STALE_SECONDS,
+        staleIfError: true,
+      },
+    );
+    return { data: value, cache };
+  }
+
+  private async readGuildMetrics(
+    guildId: string,
+    range: GuildMetricsRange,
+  ): Promise<GuildMetricsResponse> {
+    const to = startOfUtcDay();
+    const days = RANGE_DAYS[range];
+    const from = addUtcDays(to, -(days - 1));
+
+    const rows = await this.prisma.guildDailyMetrics.findMany({
+      where: {
+        guildId: BigInt(guildId),
+        day: { gte: from, lte: to },
+      },
+      orderBy: { day: "asc" },
+    });
+
+    const byDay = new Map<string, GuildDailyPoint>();
+    for (const row of rows) {
+      const day = utcDateString(row.day);
+      byDay.set(day, {
+        day,
+        messages: row.messages,
+        joins: row.joins,
+        leaves: row.leaves,
+      });
+    }
+
+    const points: GuildDailyPoint[] = [];
+    let totals = { messages: 0, joins: 0, leaves: 0 };
+    for (let i = 0; i < days; i += 1) {
+      const day = utcDateString(addUtcDays(from, i));
+      const point = byDay.get(day) ?? {
+        day,
+        messages: 0,
+        joins: 0,
+        leaves: 0,
+      };
+      points.push(point);
+      totals = {
+        messages: totals.messages + point.messages,
+        joins: totals.joins + point.joins,
+        leaves: totals.leaves + point.leaves,
+      };
+    }
+
+    const todayKey = utcDateString(to);
+    const today = byDay.get(todayKey) ?? {
+      day: todayKey,
+      messages: 0,
+      joins: 0,
+      leaves: 0,
+    };
+
+    return {
+      range,
+      from: utcDateString(from),
+      to: todayKey,
+      today: {
+        messages: today.messages,
+        joins: today.joins,
+        leaves: today.leaves,
+      },
+      totals,
+      points,
     };
   }
 

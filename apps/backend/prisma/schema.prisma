@@ -99,6 +99,19 @@ model BotMetrics {
   @@map("bot_metrics")
 }
 
+/// Per-guild UTC daily activity counters. Bot increments; backend reads.
+model GuildDailyMetrics {
+  guildId  BigInt   @map("guild_id")
+  day      DateTime @db.Date
+  messages Int      @default(0)
+  joins    Int      @default(0)
+  leaves   Int      @default(0)
+
+  @@id([guildId, day])
+  @@index([guildId, day])
+  @@map("guild_daily_metrics")
+}
+
 /// Backend-owned opaque web sessions. Discord tokens are encrypted at rest.
 model WebSession {
   id                     String    @id @db.Text

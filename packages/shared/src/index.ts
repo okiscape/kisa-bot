@@ -197,6 +197,24 @@ export interface MetricsDetailed extends MetricsSummary {
   shardCount: number;
 }
 
+export type GuildMetricsRange = "day" | "week" | "month" | "6m" | "year";
+
+export interface GuildDailyPoint {
+  day: string;
+  messages: number;
+  joins: number;
+  leaves: number;
+}
+
+export interface GuildMetricsResponse {
+  range: GuildMetricsRange;
+  from: string;
+  to: string;
+  today: { messages: number; joins: number; leaves: number };
+  totals: { messages: number; joins: number; leaves: number };
+  points: GuildDailyPoint[];
+}
+
 /** @deprecated Prefer DiscordUserSummary / DiscordProfile */
 export interface DiscordUser {
   id: string;

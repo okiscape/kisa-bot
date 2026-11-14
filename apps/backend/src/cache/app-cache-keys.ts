@@ -35,3 +35,31 @@ export function discordUserGuildsCacheKey(
 export function discordBotGuildIdsCacheKey(): string {
   return "discord:bot-guild-ids";
 }
+
+/** Guild daily activity API responses (Nest). Invalidated by the bot on flush. */
+export const GUILD_METRICS_CACHE_TTL_SECONDS = 30;
+export const GUILD_METRICS_CACHE_STALE_SECONDS = 120;
+
+export const GUILD_METRICS_RANGES = [
+  "week",
+  "month",
+  "6m",
+  "year",
+] as const;
+
+export type GuildMetricsRange = (typeof GUILD_METRICS_RANGES)[number];
+
+export function guildMetricsCacheKey(
+  guildId: string | number | bigint,
+  range: GuildMetricsRange | string,
+): string {
+  return `app:guild:${String(guildId)}:metrics:${range}`;
+}
+
+export function guildMetricsCacheKeys(
+  guildId: string | number | bigint,
+): string[] {
+  return GUILD_METRICS_RANGES.map((range) =>
+    guildMetricsCacheKey(guildId, range),
+  );
+}

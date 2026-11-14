@@ -1,6 +1,7 @@
 import disnake
 from disnake.ext.commands import AutoShardedInteractionBot, Cog
 from utils import bot_logging, config, database, emojis, locales, shortcuts
+from utils.guild_metrics_flusher import GuildMetricsFlusher
 from utils.metrics_flusher import MetricsFlusher
 from utils.redis_client import close_redis, get_redis
 
@@ -19,6 +20,7 @@ class KisaBot(AutoShardedInteractionBot):
         self.shortcuts = shortcuts
         self.custom_emojis = emojis
         self.metrics_flusher: MetricsFlusher | None = None
+        self.guild_metrics_flusher: GuildMetricsFlusher | None = None
 
         intents = disnake.Intents.all()
 
@@ -100,7 +102,13 @@ class KisaBot(AutoShardedInteractionBot):
             self.metrics_flusher = MetricsFlusher(self)
         self.metrics_flusher.start()
 
+        if self.guild_metrics_flusher is None:
+            self.guild_metrics_flusher = GuildMetricsFlusher(self)
+        self.guild_metrics_flusher.start()
+
     async def close(self):
+        if self.guild_metrics_flusher is not None:
+            await self.guild_metrics_flusher.stop()
         if self.metrics_flusher is not None:
             await self.metrics_flusher.stop()
         await close_redis()

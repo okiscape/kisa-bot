@@ -110,6 +110,20 @@ export class GuildsController {
     return this.guildsService.previewWebhook(guildId, url);
   }
 
+  @Get(":guildId/metrics")
+  @UseGuards(GuildAdminGuard)
+  @ApiOperation({
+    summary: "Per-guild daily activity (messages, joins, leaves)",
+  })
+  async getGuildMetrics(
+    @Param("guildId") guildId: string,
+    @Query("range") range?: string,
+  ) {
+    const parsed = this.guildsService.parseMetricsRange(range);
+    const { data } = await this.guildsService.getGuildMetrics(guildId, parsed);
+    return data;
+  }
+
   @Patch(":guildId/settings")
   @UseGuards(GuildAdminGuard)
   @ApiOperation({ summary: "Partial update guild settings" })
