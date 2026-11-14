@@ -56,6 +56,21 @@ export class ReactionRolesService {
     return rows.map((row) => this.toDto(row));
   }
 
+  async get(guildId: string, panelId: string): Promise<ReactionRolePanelDto> {
+    await this.requireBotInstalled(guildId);
+    const row = await this.prisma.reactionRolePanel.findFirst({
+      where: { id: panelId, guildId: BigInt(guildId) },
+      include: { pairs: { orderBy: { position: "asc" } } },
+    });
+    if (!row) {
+      throw new NotFoundException({
+        code: ErrorCodes.NOT_FOUND,
+        message: "Reaction role panel not found",
+      });
+    }
+    return this.toDto(row);
+  }
+
   async getEmojis(guildId: string): Promise<GuildEmojiDto[]> {
     await this.requireBotInstalled(guildId);
     const { value } = await this.cache.getOrSet(

@@ -101,3 +101,48 @@ export const TEMPLATE_VARS = [
 
 /** Discord text channel types used in channel pickers. */
 export const TEXTISH_CHANNEL_TYPES = new Set([0, 5, 11, 12])
+
+export function resolveEmbedColor(
+	color: string | null | undefined,
+	fallback: string,
+) {
+	if (!color) return fallback
+	return color.startsWith("#") ? color : `#${color}`
+}
+
+export function embedHasPreview(embed: MessageEmbedConfig) {
+	return Boolean(
+		embed.title ||
+			embed.description ||
+			embed.imageUrl ||
+			embed.authorName ||
+			embed.footerText ||
+			embed.url ||
+			embed.thumbnailUrl ||
+			(embed.fields ?? []).some((f) => f.name || f.value),
+	)
+}
+
+/** Group Discord-style: non-inline alone, consecutive inline up to 3 per row. */
+export function groupEmbedFields(fields: MessageEmbedField[]) {
+	const rows: MessageEmbedField[][] = []
+	let inlineBuf: MessageEmbedField[] = []
+	for (const field of fields) {
+		if (!field.name && !field.value) continue
+		if (field.inline) {
+			inlineBuf.push(field)
+			if (inlineBuf.length === 3) {
+				rows.push(inlineBuf)
+				inlineBuf = []
+			}
+			continue
+		}
+		if (inlineBuf.length) {
+			rows.push(inlineBuf)
+			inlineBuf = []
+		}
+		rows.push([field])
+	}
+	if (inlineBuf.length) rows.push(inlineBuf)
+	return rows
+}

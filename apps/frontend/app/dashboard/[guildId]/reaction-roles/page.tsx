@@ -10,6 +10,7 @@ import {
 	roleColorHex,
 	type ReactionRolePanel,
 } from "@/lib/reaction-roles"
+import ReactionRolesShell from "./page-shell"
 import "./reaction-roles.css"
 
 export default function ReactionRolesPage() {
@@ -37,53 +38,22 @@ export default function ReactionRolesPage() {
 		void load()
 	}, [load])
 
-	const channelName = useMemo(() => {
-		const map = new Map(
-			(options?.channels ?? []).map((c) => [c.id, c.name] as const),
-		)
-		return (id: string) => map.get(id) ?? id
-	}, [options])
+	const channelsById = useMemo(
+		() => new Map((options?.channels ?? []).map((c) => [c.id, c.name])),
+		[options],
+	)
+	const rolesById = useMemo(
+		() => new Map((options?.roles ?? []).map((r) => [r.id, r])),
+		[options],
+	)
 
-	const roleMeta = useMemo(() => {
-		const map = new Map(
-			(options?.roles ?? []).map((r) => [r.id, r] as const),
-		)
-		return (id: string) => map.get(id)
-	}, [options])
-
-	if (error) {
-		return (
-			<div className="reaction-roles">
-				<div className="head">
-					<h1 className="title">Reaction roles</h1>
-					<p className="lead">{error}</p>
-				</div>
-			</div>
-		)
-	}
-
-	if (!panels) {
-		return (
-			<div className="reaction-roles">
-				<div className="head">
-					<h1 className="title">Reaction roles</h1>
-					<p className="lead">Loading…</p>
-				</div>
-			</div>
-		)
-	}
+	if (error) return <ReactionRolesShell lead={error} />
+	if (!panels) return <ReactionRolesShell lead="Loading…" />
 
 	const canCreate = panels.length < MAX_PANELS
 
 	return (
-		<div className="reaction-roles">
-			<div className="head">
-				<h1 className="title">Reaction roles</h1>
-				<p className="lead">
-					Members click an emoji under a message and get a role.
-				</p>
-			</div>
-
+		<ReactionRolesShell>
 			<div className="list-toolbar">
 				<div className="list-head">
 					<strong>Your reaction roles</strong>
@@ -106,22 +76,21 @@ export default function ReactionRolesPage() {
 					<p className="rr-empty">No reaction roles yet. Create one to start.</p>
 				) : (
 					panels.map((panel, index) => {
-						const roles = panel.pairs
-						const visible = roles.slice(0, 3)
-						const extra = roles.length - visible.length
+						const visible = panel.pairs.slice(0, 3)
+						const extra = panel.pairs.length - visible.length
 						return (
 							<div className="rr-row" key={panel.id}>
 								<span className="rr-num">{index + 1}</span>
 								<span className="rr-channel">
-									#{channelName(panel.channelId)}
+									#{channelsById.get(panel.channelId) ?? panel.channelId}
 								</span>
 								<div className="rr-roles">
 									{visible.map((pair) => {
-										const role = roleMeta(pair.roleId)
+										const role = rolesById.get(pair.roleId)
 										return (
 											<span
 												className="rr-role-chip"
-												key={pair.id ?? pair.roleId}
+												key={pair.id ?? `${pair.emoji}-${pair.roleId}`}
 											>
 												<span
 													className="dot"
@@ -148,6 +117,6 @@ export default function ReactionRolesPage() {
 					})
 				)}
 			</div>
-		</div>
+		</ReactionRolesShell>
 	)
 }

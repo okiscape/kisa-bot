@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import BotAvatar from "@/components/bot-avatar"
+import DiscordEmbedPreview from "@/components/discord-embed-preview"
 import Switch from "@/components/switch"
 import SettingsSaveBar from "@/components/settings-save-bar"
 import {
@@ -16,6 +17,7 @@ import {
 	emptyEmbed,
 	emptyEmbedField,
 	renderPreviewText,
+	resolveEmbedColor,
 	TEMPLATE_VARS,
 	TEXTISH_CHANNEL_TYPES,
 	type MessageConfig,
@@ -59,47 +61,6 @@ type Props = {
 	status: string | null
 	autoRole?: string | null
 	onAutoRoleChange?: (roleId: string | null) => void
-}
-
-function resolveEmbedColor(color: string | null | undefined, fallback: string) {
-	if (!color) return fallback
-	return color.startsWith("#") ? color : `#${color}`
-}
-
-function embedHasPreview(embed: MessageEmbedConfig) {
-	return Boolean(
-		embed.title ||
-			embed.description ||
-			embed.imageUrl ||
-			embed.authorName ||
-			embed.footerText ||
-			embed.url ||
-			(embed.fields ?? []).some((f) => f.name || f.value),
-	)
-}
-
-/** Group Discord-style: non-inline alone, consecutive inline up to 3 per row. */
-function groupEmbedFields(fields: MessageEmbedField[]) {
-	const rows: MessageEmbedField[][] = []
-	let inlineBuf: MessageEmbedField[] = []
-	for (const field of fields) {
-		if (!field.name && !field.value) continue
-		if (field.inline) {
-			inlineBuf.push(field)
-			if (inlineBuf.length === 3) {
-				rows.push(inlineBuf)
-				inlineBuf = []
-			}
-			continue
-		}
-		if (inlineBuf.length) {
-			rows.push(inlineBuf)
-			inlineBuf = []
-		}
-		rows.push([field])
-	}
-	if (inlineBuf.length) rows.push(inlineBuf)
-	return rows
 }
 
 export default function MessageEditor({
@@ -611,121 +572,15 @@ export default function MessageEditor({
 						{previewContent ? (
 							<MarkdownText className="msg-content" text={previewContent} />
 						) : null}
-						{embeds.map((embed, index) => {
-							if (!embedHasPreview(embed)) return null
-							const color = resolveEmbedColor(embed.color, defaultEmbedColor)
-							const previewAuthor = renderPreviewText(
-								embed.authorName || "",
-								PREVIEW_VARS,
-							)
-							const previewTitle = renderPreviewText(
-								embed.title || (index === 0 ? title : ""),
-								PREVIEW_VARS,
-							)
-							const previewDesc = renderPreviewText(
-								embed.description || "",
-								PREVIEW_VARS,
-							)
-							const previewFooter = renderPreviewText(
-								embed.footerText || "",
-								PREVIEW_VARS,
-							)
-							const fieldRows = groupEmbedFields(embed.fields ?? [])
-							return (
-								<div
-									key={index}
-									className="msg-embed"
-									style={{ borderColor: color }}
-								>
-									{previewAuthor ? (
-										<div className="embed-author">
-											{embed.authorIconUrl ? (
-												<img
-													src={embed.authorIconUrl}
-													alt=""
-													width={24}
-													height={24}
-												/>
-											) : null}
-											<MarkdownText
-												as="span"
-												className="embed-author-name"
-												text={previewAuthor}
-												mode="inline"
-											/>
-										</div>
-									) : null}
-									{previewTitle ? (
-										<MarkdownText
-											className="embed-title"
-											text={previewTitle}
-											mode="inline"
-										/>
-									) : null}
-									{previewDesc ? (
-										<MarkdownText className="embed-desc" text={previewDesc} />
-									) : null}
-									{fieldRows.length ? (
-										<div className="embed-fields-grid">
-											{fieldRows.map((row, rowIndex) => {
-												const isInlineRow = row.every((f) => f.inline)
-												return (
-													<div
-														key={rowIndex}
-														className={`embed-fields-row${isInlineRow ? " inline" : ""}`}
-													>
-														{row.map((field, fieldIndex) => (
-															<div key={fieldIndex} className="embed-field">
-																{field.name ? (
-																	<MarkdownText
-																		className="field-name"
-																		text={renderPreviewText(
-																			field.name,
-																			PREVIEW_VARS,
-																		)}
-																		mode="inline"
-																	/>
-																) : null}
-																{field.value ? (
-																	<MarkdownText
-																		className="field-value"
-																		text={renderPreviewText(
-																			field.value,
-																			PREVIEW_VARS,
-																		)}
-																	/>
-																) : null}
-															</div>
-														))}
-													</div>
-												)
-											})}
-										</div>
-									) : null}
-									{embed.imageUrl ? (
-										<img className="embed-image" src={embed.imageUrl} alt="" />
-									) : null}
-									{previewFooter ? (
-										<div className="embed-footer">
-											{embed.footerIconUrl ? (
-												<img
-													src={embed.footerIconUrl}
-													alt=""
-													width={20}
-													height={20}
-												/>
-											) : null}
-											<MarkdownText
-												as="span"
-												className="embed-footer-text"
-												text={previewFooter}
-												mode="inline"
-											/>
-										</div>
-									) : null}
-								</div>
-							)
-						})}
+						{embeds.map((embed, index) => (
+							<DiscordEmbedPreview
+								key={index}
+								embed={embed}
+								fallbackColor={defaultEmbedColor}
+								fallbackTitle={index === 0 ? title : ""}
+								vars={PREVIEW_VARS}
+							/>
+						))}
 					</div>
 				</aside>
 			) : null}

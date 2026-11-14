@@ -32,6 +32,15 @@ export class ReactionRolesController {
     return this.reactionRoles.getEmojis(guildId);
   }
 
+  @Get(":panelId")
+  @ApiOperation({ summary: "Get a single reaction role panel" })
+  get(
+    @Param("guildId") guildId: string,
+    @Param("panelId") panelId: string,
+  ) {
+    return this.reactionRoles.get(guildId, panelId);
+  }
+
   @Post()
   @ApiOperation({ summary: "Create a reaction role panel and post/attach" })
   create(

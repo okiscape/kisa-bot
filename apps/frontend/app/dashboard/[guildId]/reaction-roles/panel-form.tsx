@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Link } from "next-view-transitions"
 import { useRouter } from "next/navigation"
 import BotAvatar from "@/components/bot-avatar"
+import DiscordEmbedPreview from "@/components/discord-embed-preview"
 import EmojiPicker, { type GuildEmojiOption } from "@/components/emoji-picker"
 import Switch from "@/components/switch"
 import {
@@ -13,26 +14,27 @@ import {
 	TextField,
 } from "@/components/form-controls"
 import { apiFetch, ApiError } from "@/lib/api"
+import {
+	resolveEmbedColor,
+	TEXTISH_CHANNEL_TYPES,
+	type SettingsOptions,
+} from "@/lib/message-config"
 import { MarkdownText } from "@/lib/simple-markdown"
 import { emojiImageUrl } from "@/lib/twemoji"
 import {
 	DEFAULT_EMBED_COLOR,
 	draftToPayload,
-	embedHasPreview,
 	emptyDraft,
 	emptyEmbedField,
-	groupEmbedFields,
 	MAX_EMBED_FIELDS,
 	MAX_PAIRS,
+	nextPairKey,
 	panelToDraft,
-	resolveEmbedColor,
 	type ReactionRoleDraft,
 	type ReactionRoleMode,
 	type ReactionRolePanel,
 	type ReactionRoleType,
 } from "@/lib/reaction-roles"
-import type { SettingsOptions } from "@/lib/message-config"
-import { TEXTISH_CHANNEL_TYPES } from "@/lib/message-config"
 
 type Props = {
 	guildId: string
@@ -65,7 +67,6 @@ export default function PanelForm({
 	const [draft, setDraft] = useState<ReactionRoleDraft>(
 		panel ? panelToDraft(panel) : emptyDraft(),
 	)
-	const [advancedOpen, setAdvancedOpen] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [deleting, setDeleting] = useState(false)
 	const [status, setStatus] = useState<string | null>(null)
@@ -75,7 +76,7 @@ export default function PanelForm({
 			(options.channels ?? [])
 				.filter((c) => TEXTISH_CHANNEL_TYPES.has(c.type))
 				.sort((a, b) => a.position - b.position)
-				.map((c) => ({ value: c.id, label: `#${c.name}` })),
+				.map((c) => ({ value: c.id, label: `#${c.name} (${c.id})` })),
 		[options.channels],
 	)
 
@@ -87,9 +88,16 @@ export default function PanelForm({
 				.map((r) => ({
 					value: r.id,
 					label: `${r.name} (${r.id})`,
-					color: r.color,
 				})),
 		[options.roles],
+	)
+
+	const usedEmojis = useMemo(
+		() =>
+			draft.pairs
+				.map((p) => p.emoji)
+				.filter((e): e is string => Boolean(e)),
+		[draft.pairs],
 	)
 
 	const isExistingLocked =
@@ -98,7 +106,6 @@ export default function PanelForm({
 	const showMessageFields = draft.mode !== "existing"
 	const embedColor = resolveEmbedColor(draft.embed.color, DEFAULT_EMBED_COLOR)
 	const previewPairs = draft.pairs.filter((p) => p.emoji)
-	const fieldRows = groupEmbedFields(draft.embed.fields ?? [])
 
 	function patch(partial: Partial<ReactionRoleDraft>) {
 		setDraft((prev) => ({ ...prev, ...partial }))
@@ -472,13 +479,11 @@ export default function PanelForm({
 				>
 					<div className="rr-pairs">
 						{draft.pairs.map((pair, i) => (
-							<div className="rr-pair" key={i}>
+							<div className="rr-pair" key={pair.key}>
 								<EmojiPicker
 									value={pair.emoji}
 									guildEmojis={guildEmojis}
-									disabledKeys={draft.pairs
-										.map((p) => p.emoji)
-										.filter((e): e is string => Boolean(e))}
+									disabledKeys={usedEmojis}
 									onChange={(emoji) => setPair(i, { emoji })}
 								/>
 								<select
@@ -504,7 +509,13 @@ export default function PanelForm({
 											...prev,
 											pairs:
 												prev.pairs.length <= 1
-													? [{ emoji: null, roleId: null }]
+													? [
+															{
+																key: nextPairKey(),
+																emoji: null,
+																roleId: null,
+															},
+														]
 													: prev.pairs.filter((_, idx) => idx !== i),
 										}))
 									}
@@ -521,7 +532,10 @@ export default function PanelForm({
 						onClick={() =>
 							setDraft((prev) => ({
 								...prev,
-								pairs: [...prev.pairs, { emoji: null, roleId: null }],
+								pairs: [
+									...prev.pairs,
+									{ key: nextPairKey(), emoji: null, roleId: null },
+								],
 							}))
 						}
 					>
@@ -532,7 +546,7 @@ export default function PanelForm({
 				<FormRow
 					label="Type"
 					hint="Normal, verify, or unique reaction behavior."
-					column={advancedOpen || undefined}
+					column
 				>
 					<div className="embed-list">
 						<div className="embed-panel">
@@ -591,7 +605,7 @@ export default function PanelForm({
 			<aside className="discord-preview">
 				<div className="side-head">
 					<strong>Preview</strong>
-					<span>How it looks in Discord.</span>
+					<span>Live Discord-style</span>
 				</div>
 				<div className="discord-msg">
 					<div className="msg-head">
@@ -601,7 +615,7 @@ export default function PanelForm({
 								<strong>kisa</strong>
 								<span className="bot-tag">APP</span>
 							</div>
-							<span className="time">Today at 14:02</span>
+							<span className="time">Today at 12:00</span>
 						</div>
 					</div>
 
@@ -609,115 +623,11 @@ export default function PanelForm({
 						<MarkdownText className="msg-content" text={draft.content} />
 					) : null}
 
-					{showEmbed && embedHasPreview(draft.embed) ? (
-						<div
-							className="msg-embed"
-							style={{ borderColor: embedColor }}
-						>
-							{draft.embed.authorName ? (
-								<div className="embed-author">
-									{draft.embed.authorIconUrl ? (
-										<img
-											src={draft.embed.authorIconUrl}
-											alt=""
-											width={24}
-											height={24}
-										/>
-									) : null}
-									<MarkdownText
-										as="span"
-										className="embed-author-name"
-										text={draft.embed.authorName}
-										mode="inline"
-									/>
-								</div>
-							) : null}
-
-							{draft.embed.thumbnailUrl || draft.embed.title || draft.embed.description || fieldRows.length ? (
-								<div className="embed-body">
-									<div className="embed-main">
-										{draft.embed.title ? (
-											<MarkdownText
-												className="embed-title"
-												text={draft.embed.title}
-												mode="inline"
-											/>
-										) : null}
-										{draft.embed.description ? (
-											<MarkdownText
-												className="embed-desc"
-												text={draft.embed.description}
-											/>
-										) : null}
-										{fieldRows.length ? (
-											<div className="embed-fields-grid">
-												{fieldRows.map((row, rowIndex) => {
-													const isInlineRow = row.every((f) => f.inline)
-													return (
-														<div
-															key={rowIndex}
-															className={`embed-fields-row${isInlineRow ? " inline" : ""}`}
-														>
-															{row.map((field, fieldIndex) => (
-																<div key={fieldIndex} className="embed-field">
-																	{field.name ? (
-																		<MarkdownText
-																			className="field-name"
-																			text={field.name}
-																			mode="inline"
-																		/>
-																	) : null}
-																	{field.value ? (
-																		<MarkdownText
-																			className="field-value"
-																			text={field.value}
-																		/>
-																	) : null}
-																</div>
-															))}
-														</div>
-													)
-												})}
-											</div>
-										) : null}
-									</div>
-									{draft.embed.thumbnailUrl ? (
-										<img
-											className="embed-thumb"
-											src={draft.embed.thumbnailUrl}
-											alt=""
-										/>
-									) : null}
-								</div>
-							) : null}
-
-							{draft.embed.imageUrl ? (
-								<img
-									className="embed-image"
-									src={draft.embed.imageUrl}
-									alt=""
-								/>
-							) : null}
-
-							{draft.embed.footerText ? (
-								<div className="embed-footer">
-									{draft.embed.footerIconUrl ? (
-										<img
-											src={draft.embed.footerIconUrl}
-											alt=""
-											width={20}
-											height={20}
-										/>
-									) : null}
-									<MarkdownText
-										as="span"
-										className="embed-footer-text"
-										text={draft.embed.footerText}
-										mode="inline"
-									/>
-								</div>
-							) : null}
-						</div>
+					{showEmbed ? (
+						<DiscordEmbedPreview
+							embed={draft.embed}
+							fallbackColor={DEFAULT_EMBED_COLOR}
+						/>
 					) : null}
 
 					{previewPairs.length ? (
@@ -725,7 +635,10 @@ export default function PanelForm({
 							{previewPairs.map((p, i) => {
 								const url = p.emoji ? emojiImageUrl(p.emoji) : null
 								return (
-									<span key={i} className={`reaction${i === 0 ? " on" : ""}`}>
+									<span
+										key={p.key}
+										className={`reaction${i === 0 ? " on" : ""}`}
+									>
 										{url ? (
 											<img src={url} alt="" width={16} height={16} />
 										) : (

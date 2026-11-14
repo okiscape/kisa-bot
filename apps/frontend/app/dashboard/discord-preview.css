@@ -228,7 +228,8 @@
 				}
 			}
 
-			> .embed-fields-grid {
+			> .embed-fields-grid,
+			> .embed-body .embed-fields-grid {
 				display: flex;
 				flex-direction: column;
 				gap: 8px;
