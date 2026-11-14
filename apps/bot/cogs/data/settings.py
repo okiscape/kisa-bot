@@ -35,14 +35,13 @@ class Settings(cog.Cog):
     def __init__(self, bot: cog.KisaBot):
         self.bot = bot
 
-    def _render_template(self, template: str, member: cog.Member, channel=None) -> str:
+    def _render_template(self, template: str, member: cog.Member) -> str:
         guild = member.guild
         replacements = {
             "{{mention}}": member.mention,
             "{{user}}": member.display_name,
             "{{server}}": guild.name if guild else "",
             "{{count}}": str(guild.member_count or 0) if guild else "0",
-            "{{channel}}": channel.mention if channel is not None else "",
         }
         out = template
         for key, value in replacements.items():
@@ -124,16 +123,15 @@ class Settings(cog.Cog):
         default_title: str,
         default_description: str,
         default_color: int,
-        channel=None,
     ) -> cog.Embed:
         title = embed_cfg.get("title")
         description = embed_cfg.get("description")
         if title:
-            title = self._render_template(str(title), member, channel)
+            title = self._render_template(str(title), member)
         else:
             title = default_title
         if description:
-            description = self._render_template(str(description), member, channel)
+            description = self._render_template(str(description), member)
         else:
             description = default_description
 
@@ -147,7 +145,7 @@ class Settings(cog.Cog):
         author_name = embed_cfg.get("authorName")
         if author_name:
             embed.set_author(
-                name=self._render_template(str(author_name), member, channel),
+                name=self._render_template(str(author_name), member),
                 icon_url=embed_cfg.get("authorIconUrl") or None,
                 url=embed_cfg.get("authorUrl") or None,
             )
@@ -155,7 +153,7 @@ class Settings(cog.Cog):
         footer_text = embed_cfg.get("footerText")
         if footer_text:
             embed.set_footer(
-                text=self._render_template(str(footer_text), member, channel),
+                text=self._render_template(str(footer_text), member),
                 icon_url=embed_cfg.get("footerIconUrl") or None,
             )
 
@@ -221,7 +219,7 @@ class Settings(cog.Cog):
 
         content_raw = cfg.get("content") or ""
         content = (
-            self._render_template(str(content_raw), member, channel)
+            self._render_template(str(content_raw), member)
             if content_raw
             else ""
         )
@@ -250,7 +248,6 @@ class Settings(cog.Cog):
                         if not embed_cfg.get("description")
                         else "",
                         default_color=default_color,
-                        channel=channel,
                     )
                 )
 

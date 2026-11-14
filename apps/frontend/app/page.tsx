@@ -343,7 +343,7 @@ export default async function Landing() {
 						<h2>Greet and farewell</h2>
 						<p>
 							Welcome new members and say goodbye with messages, embeds or webhooks. Use
-							variables for names, counts and channels.
+							variables for names and counts.
 						</p>
 					</Appear>
 					<Appear className="visual" delayMs={80}>

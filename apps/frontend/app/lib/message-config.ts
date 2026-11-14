@@ -59,13 +59,20 @@ export function emptyMessageConfig(): MessageConfig {
 	}
 }
 
+/** Private-use markers so preview markdown can style substituted placeholders. */
+export const PREVIEW_VAR_START = "\uE000"
+export const PREVIEW_VAR_MID = "\uE001"
+export const PREVIEW_VAR_END = "\uE002"
+
 export function renderPreviewText(
 	template: string,
 	vars: Record<string, string>,
 ): string {
 	let out = template
 	for (const [key, value] of Object.entries(vars)) {
-		out = out.split(`{{${key}}}`).join(value)
+		out = out
+			.split(`{{${key}}}`)
+			.join(`${PREVIEW_VAR_START}${key}${PREVIEW_VAR_MID}${value}${PREVIEW_VAR_END}`)
 	}
 	return out
 }
@@ -74,7 +81,6 @@ export const TEMPLATE_VARS = [
 	{ key: "mention", label: "{{mention}}" },
 	{ key: "server", label: "{{server}}" },
 	{ key: "count", label: "{{count}}" },
-	{ key: "channel", label: "{{channel}}" },
 ] as const
 
 /** Discord text channel types used in channel pickers. */

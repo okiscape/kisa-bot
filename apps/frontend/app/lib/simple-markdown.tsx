@@ -1,4 +1,9 @@
 import type { ReactNode } from "react"
+import {
+	PREVIEW_VAR_END,
+	PREVIEW_VAR_MID,
+	PREVIEW_VAR_START,
+} from "./message-config"
 
 type Rule = {
 	re: RegExp
@@ -6,6 +11,16 @@ type Rule = {
 }
 
 const RULES: Rule[] = [
+	{
+		re: new RegExp(
+			`${PREVIEW_VAR_START}(\\w+)${PREVIEW_VAR_MID}([^${PREVIEW_VAR_END}]*)${PREVIEW_VAR_END}`,
+		),
+		render: (m, key) => (
+			<span key={key} className={`tpl-var tpl-var--${m[1]}`}>
+				{m[2]}
+			</span>
+		),
+	},
 	{
 		re: /\*\*(.+?)\*\*/,
 		render: (m, key) => <strong key={key}>{parseInline(m[1], key)}</strong>,

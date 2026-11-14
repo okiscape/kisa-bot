@@ -50,7 +50,6 @@ export type GuildMetricsResponse = {
 };
 
 const RANGE_DAYS: Record<GuildMetricsRange, number> = {
-  day: 1,
   week: 7,
   month: 30,
   "6m": 180,

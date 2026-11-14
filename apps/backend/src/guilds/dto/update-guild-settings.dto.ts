@@ -20,6 +20,8 @@ import {
 const SNOWFLAKE = /^\d{17,20}$/;
 const HEX_COLOR = /^#?[0-9A-Fa-f]{6}$/;
 const HTTPS_URL = /^https:\/\/.+/i;
+const DISCORD_WEBHOOK_URL =
+  /^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+(?:\?.*)?$/i;
 
 export class MessageEmbedConfigDto {
   @ApiPropertyOptional()
@@ -111,9 +113,9 @@ export class MessageConfigDto {
   sender!: "bot" | "webhook";
 
   @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined && v !== "")
-  @Matches(HTTPS_URL)
+  @ValidateIf((o: MessageConfigDto) => o.sender === "webhook")
+  @IsString()
+  @Matches(DISCORD_WEBHOOK_URL)
   @MaxLength(500)
   webhookUrl?: string | null;
 

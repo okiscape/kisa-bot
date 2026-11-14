@@ -27,12 +27,11 @@ const PREVIEW_VARS = {
 	mention: "@user",
 	server: "Server",
 	count: "128",
-	channel: "#general",
 }
 
 const MAX_EMBEDS = 5
 const WEBHOOK_URL_RE =
-	/^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+/i
+	/^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+(?:\?.*)?$/i
 
 type WebhookPreview = {
 	id: string
@@ -91,6 +90,7 @@ export default function MessageEditor({
 }: Props) {
 	const [openEmbeds, setOpenEmbeds] = useState<Record<number, boolean>>({ 0: true })
 	const [webhookPreview, setWebhookPreview] = useState<WebhookPreview | null>(null)
+	const [localStatus, setLocalStatus] = useState<string | null>(null)
 	const channels = (options?.channels ?? [])
 		.filter((c) => TEXTISH_CHANNEL_TYPES.has(c.type))
 		.sort((a, b) => a.position - b.position)
@@ -186,6 +186,23 @@ export default function MessageEditor({
 	function insertVar(token: string) {
 		patch({ content: `${value.content}${token}` })
 	}
+
+	function isValidWebhookUrl(url: string) {
+		return WEBHOOK_URL_RE.test(url.trim())
+	}
+
+	function handleSave() {
+		if (isWebhookSender && !isValidWebhookUrl(value.webhookUrl ?? "")) {
+			setLocalStatus("Enter a valid Discord webhook URL")
+			return
+		}
+		setLocalStatus(null)
+		void onSave()
+	}
+
+	useEffect(() => {
+		setLocalStatus(null)
+	}, [value.sender, value.webhookUrl])
 
 	const previewContent = renderPreviewText(value.content, PREVIEW_VARS)
 
@@ -409,9 +426,9 @@ export default function MessageEditor({
 				<SettingsSaveBar
 					dirty={dirty}
 					saving={saving}
-					status={status}
+					status={localStatus ?? status}
 					onReset={onReset}
-					onSave={() => void onSave()}
+					onSave={handleSave}
 				/>
 			</div>
 

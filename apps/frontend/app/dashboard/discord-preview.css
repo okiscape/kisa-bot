@@ -290,6 +290,14 @@
 				text-decoration: underline;
 			}
 		}
+
+		.tpl-var {
+			display: inline;
+			padding: 0 2px;
+			border-radius: 3px;
+			color: #ffd084;
+			font-weight: 500;
+		}
 	}
 }
 
