@@ -1,0 +1,56 @@
+# kisa bot
+> ultimate discord bot with unlimited integrations for communications
+
+**.env scheme**
+```env
+# discord bot
+BOT_TOKEN=
+BOT_OWNER_ID=
+DEV_GUILD_ID=
+FEEDBACK_CHANNEL_ID=
+PROFILE_EDITS_CHANNEL_ID=
+SUPPORT_INVITE_URL=
+
+# frontend
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_REDIRECT_URI=http://localhost:3001/api/auth/discord/callback
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001/api
+NEXT_PUBLIC_GITHUB_URL=https://github.com
+FRONTEND_PORT=3000
+FRONTEND_URL=http://localhost:3000
+
+# postgresql
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=kisa
+POSTGRES_USER=kisa
+POSTGRES_PASSWORD=
+
+# redis
+REDIS_PORT=6379
+REDIS_URL=redis://localhost:6379
+
+# backend
+BACKEND_PORT=3001
+# Must be a full Postgres URL (not just "postgresql://"). Prefer apps/backend/.env for local API.
+DATABASE_URL=postgresql://kisa:kisa@localhost:5432/kisa
+SESSION_SECRET=change-me-to-a-long-random-string-at-least-32-chars
+SESSION_COOKIE_NAME=kisa_session
+DISCORD_BOT_TOKEN=
+CACHE_DEFAULT_TTL_SECONDS=60
+METRICS_STALE_AFTER_SECONDS=120
+DISCORD_BOT_PERMISSIONS=285280256824
+
+# osu! OAuth (account linking on the dashboard)
+# Create an app at https://osu.ppy.sh/home/account/edit#oauth
+OSU_CLIENT_ID=
+OSU_CLIENT_SECRET=
+OSU_REDIRECT_URI=http://localhost:3001/api/auth/osu/callback
+
+# Last.fm API auth (account linking on the dashboard)
+# Create an API account at https://www.last.fm/api/account/create
+LASTFM_API_KEY=
+LASTFM_API_SECRET=
+LASTFM_REDIRECT_URI=http://localhost:3001/api/auth/lastfm/callback
+```

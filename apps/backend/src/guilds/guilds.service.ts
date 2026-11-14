@@ -7,7 +7,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CacheService } from "../cache/cache.service";
 import { DiscordApiClient } from "../discord/discord-api.client";
 import { AuthService } from "../auth/auth.service";
-import { guildIconUrl } from "../discord/discord-cdn.util";
+import { avatarUrl, guildIconUrl } from "../discord/discord-cdn.util";
 import {
   DiscordApiChannel,
   DiscordApiGuild,
@@ -276,6 +276,23 @@ export class GuildsService {
       })),
       languages: [...SUPPORTED_LANGUAGES],
       badWordsActions: [...BAD_WORDS_ACTIONS],
+    };
+  }
+
+  async previewWebhook(guildId: string, webhookUrl: string) {
+    await this.requireBotInstalled(guildId);
+    const webhook = await this.discord.getWebhookByUrl(webhookUrl);
+    if (webhook.guildId && webhook.guildId !== guildId) {
+      throw new BadRequestException({
+        code: ErrorCodes.VALIDATION_ERROR,
+        message: "Webhook does not belong to this guild",
+      });
+    }
+    return {
+      id: webhook.id,
+      name: webhook.name,
+      avatarUrl: avatarUrl(webhook.id, webhook.avatar, 128),
+      channelId: webhook.channelId,
     };
   }
 

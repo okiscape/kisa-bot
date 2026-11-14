@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Patch,
@@ -91,6 +92,22 @@ export class GuildsController {
   @ApiOperation({ summary: "Channels, roles, and enum options for settings UI" })
   async getSettingsOptions(@Param("guildId") guildId: string) {
     return this.guildsService.getSettingsOptions(guildId);
+  }
+
+  @Get(":guildId/webhooks/preview")
+  @UseGuards(GuildAdminGuard)
+  @ApiOperation({ summary: "Resolve Discord webhook name and avatar for preview" })
+  async previewWebhook(
+    @Param("guildId") guildId: string,
+    @Query("url") url?: string,
+  ) {
+    if (!url?.trim()) {
+      throw new BadRequestException({
+        code: ErrorCodes.VALIDATION_ERROR,
+        message: "Webhook URL is required",
+      });
+    }
+    return this.guildsService.previewWebhook(guildId, url);
   }
 
   @Patch(":guildId/settings")

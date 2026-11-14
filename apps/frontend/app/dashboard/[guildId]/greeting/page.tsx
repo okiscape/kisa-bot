@@ -155,6 +155,7 @@ export default function GreetingPage() {
 
 			<MessageEditor
 				key={tab}
+				guildId={guildId}
 				title={tab === "greeting" ? "Welcome" : "Goodbye"}
 				value={active}
 				options={options}

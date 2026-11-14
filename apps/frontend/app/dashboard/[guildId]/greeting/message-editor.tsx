@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import BotAvatar from "@/components/bot-avatar"
 import Switch from "@/components/switch"
 import SettingsSaveBar from "@/components/settings-save-bar"
@@ -11,6 +11,7 @@ import {
 	TextAreaField,
 	TextField,
 } from "@/components/form-controls"
+import { apiFetch } from "@/lib/api"
 import {
 	emptyEmbed,
 	renderPreviewText,
@@ -30,8 +31,20 @@ const PREVIEW_VARS = {
 }
 
 const MAX_EMBEDS = 5
+const WEBHOOK_URL_RE =
+	/^https:\/\/(?:www\.)?(?:discord|discordapp)\.com\/api(?:\/v\d+)?\/webhooks\/\d{17,20}\/[\w-]+/i
+
+type WebhookPreview = {
+	id: string
+	name: string
+	avatarUrl: string
+	channelId: string | null
+}
+
+const webhookPreviewCache = new Map<string, WebhookPreview>()
 
 type Props = {
+	guildId: string
 	title: string
 	value: MessageConfig
 	options: SettingsOptions | null
@@ -62,6 +75,7 @@ function embedHasPreview(embed: MessageEmbedConfig) {
 }
 
 export default function MessageEditor({
+	guildId,
 	title,
 	value,
 	options,
@@ -76,6 +90,7 @@ export default function MessageEditor({
 	onAutoRoleChange,
 }: Props) {
 	const [openEmbeds, setOpenEmbeds] = useState<Record<number, boolean>>({ 0: true })
+	const [webhookPreview, setWebhookPreview] = useState<WebhookPreview | null>(null)
 	const channels = (options?.channels ?? [])
 		.filter((c) => TEXTISH_CHANNEL_TYPES.has(c.type))
 		.sort((a, b) => a.position - b.position)
@@ -87,6 +102,49 @@ export default function MessageEditor({
 	const showAutoRole = onAutoRoleChange !== undefined
 	const showSettings = value.enabled
 	const embeds = value.embeds
+	const isWebhookSender = value.sender === "webhook"
+
+	useEffect(() => {
+		if (!isWebhookSender) {
+			setWebhookPreview(null)
+			return
+		}
+
+		const url = value.webhookUrl?.trim() ?? ""
+		if (!WEBHOOK_URL_RE.test(url)) {
+			setWebhookPreview(null)
+			return
+		}
+
+		const cached = webhookPreviewCache.get(url)
+		if (cached) {
+			setWebhookPreview(cached)
+			return
+		}
+
+		let cancelled = false
+		const timer = window.setTimeout(() => {
+			void apiFetch<WebhookPreview>(
+				`/guilds/${guildId}/webhooks/preview?url=${encodeURIComponent(url)}`,
+			)
+				.then((preview) => {
+					webhookPreviewCache.set(url, preview)
+					if (!cancelled) setWebhookPreview(preview)
+				})
+				.catch(() => {
+					if (!cancelled) setWebhookPreview(null)
+				})
+		}, 400)
+
+		return () => {
+			cancelled = true
+			window.clearTimeout(timer)
+		}
+	}, [guildId, isWebhookSender, value.webhookUrl])
+
+	const previewName =
+		isWebhookSender ? (webhookPreview?.name ?? "Webhook") : "kisa"
+	const previewBadge = isWebhookSender ? "WEBHOOK" : "BOT"
 
 	function patch(partial: Partial<MessageConfig>) {
 		onChange({ ...value, ...partial })
@@ -365,11 +423,25 @@ export default function MessageEditor({
 					</div>
 					<div className="discord-msg">
 						<div className="msg-head">
-							<BotAvatar />
+							{isWebhookSender && webhookPreview ? (
+								<img
+									className="bot-avatar"
+									src={webhookPreview.avatarUrl}
+									alt={webhookPreview.name}
+									width={44}
+									height={44}
+								/>
+							) : (
+								<BotAvatar alt={previewName} />
+							)}
 							<div>
 								<div className="name-row">
-									<strong>kisa</strong>
-									<span className="bot-tag">BOT</span>
+									<strong>{previewName}</strong>
+									<span
+										className="bot-tag"
+									>
+										{previewBadge}
+									</span>
 								</div>
 								<span className="time">Today at 12:00</span>
 							</div>

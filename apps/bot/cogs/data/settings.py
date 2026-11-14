@@ -261,12 +261,16 @@ class Settings(cog.Cog):
         sender = cfg.get("sender") or "bot"
         webhook_url = cfg.get("webhookUrl")
         if sender == "webhook" and webhook_url:
-            await self._send_webhook(
-                webhook_url,
-                content=content or None,
-                embeds=embeds,
-            )
-            return
+            try:
+                await self._send_webhook(
+                    webhook_url,
+                    content=content or None,
+                    embeds=embeds,
+                )
+                return
+            except Exception:
+                # Broken / deleted / unauthorized webhook → send as the bot.
+                pass
 
         kwargs = {}
         if content:

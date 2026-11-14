@@ -271,6 +271,86 @@ export class DiscordApiClient {
       }));
   }
 
+  /**
+   * Resolve a Discord webhook by its full URL (includes token).
+   * GET /webhooks/{id}/{token} — no bot authorization required.
+   */
+  async getWebhookByUrl(webhookUrl: string): Promise<{
+    id: string;
+    name: string;
+    avatar: string | null;
+    guildId: string | null;
+    channelId: string | null;
+  }> {
+    const parsed = this.parseWebhookUrl(webhookUrl);
+    if (!parsed) {
+      throw new HttpException(
+        {
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: "Invalid Discord webhook URL",
+        },
+        400,
+      );
+    }
+
+    const res = await this.request(
+      `/webhooks/${parsed.id}/${parsed.token}`,
+      {},
+      1,
+    );
+    if (res.status === 404 || res.status === 401) {
+      throw new HttpException(
+        {
+          code: ErrorCodes.NOT_FOUND,
+          message: "Webhook not found or token invalid",
+        },
+        404,
+      );
+    }
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to fetch webhook");
+    }
+
+    const webhook = (await res.json()) as {
+      id: string;
+      name: string | null;
+      avatar: string | null;
+      guild_id?: string | null;
+      channel_id?: string | null;
+    };
+
+    return {
+      id: webhook.id,
+      name: webhook.name?.trim() || "Webhook",
+      avatar: webhook.avatar,
+      guildId: webhook.guild_id ?? null,
+      channelId: webhook.channel_id ?? null,
+    };
+  }
+
+  parseWebhookUrl(
+    raw: string,
+  ): { id: string; token: string } | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    try {
+      const url = new URL(trimmed);
+      if (
+        url.protocol !== "https:" ||
+        !/^(?:www\.)?(?:discord|discordapp)\.com$/i.test(url.hostname)
+      ) {
+        return null;
+      }
+      const match = url.pathname.match(
+        /\/api(?:\/v\d+)?\/webhooks\/(\d{17,20})\/([\w-]+)/i,
+      );
+      if (!match) return null;
+      return { id: match[1], token: match[2] };
+    } catch {
+      return null;
+    }
+  }
+
   private async request(
     path: string,
     options: RequestOptions = {},
