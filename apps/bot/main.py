@@ -17,5 +17,6 @@ KisaBot(
         "cogs.utils.user",
         "cogs.utils.timestamp",
         "cogs.utils.dev_utils",
+        "cogs.utils.osu",
     ]
 )

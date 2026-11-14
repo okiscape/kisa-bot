@@ -78,6 +78,13 @@ version_number = env.get("BOT_VERSION_NUMBER") or "0.1"
 # Optional; empty disables Redis (backend/bot can run without it).
 redis_url = (env.get("REDIS_URL") or "").strip()
 
+# osu! API (client-credentials). Empty disables osu commands that need the API.
+osu_client_id = _int("OSU_CLIENT_ID")
+osu_client_secret = (env.get("OSU_CLIENT_SECRET") or "").strip()
+
+# Public web dashboard (osu link, settings, etc.)
+dashboard_url = (env.get("DASHBOARD_URL") or "").strip().rstrip("/")
+
 
 class colors:
     spotify_main = 0x1ED760

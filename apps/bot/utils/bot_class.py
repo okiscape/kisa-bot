@@ -5,6 +5,11 @@ from utils.guild_metrics_flusher import GuildMetricsFlusher
 from utils.metrics_flusher import MetricsFlusher
 from utils.redis_client import close_redis, get_redis
 
+try:
+    import ossapi
+except Exception:  # pragma: no cover - optional until installed
+    ossapi = None
+
 
 class KisaBot(AutoShardedInteractionBot):
     """Custom Bot Class"""
@@ -21,6 +26,16 @@ class KisaBot(AutoShardedInteractionBot):
         self.custom_emojis = emojis
         self.metrics_flusher: MetricsFlusher | None = None
         self.guild_metrics_flusher: GuildMetricsFlusher | None = None
+        self.osu_api = None
+        if (
+            ossapi is not None
+            and config.osu_client_id
+            and config.osu_client_secret
+        ):
+            self.osu_api = ossapi.OssapiAsync(
+                config.osu_client_id,
+                config.osu_client_secret,
+            )
 
         intents = disnake.Intents.all()
 

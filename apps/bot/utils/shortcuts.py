@@ -16,6 +16,27 @@ TIME_UNITS: tuple[tuple[str, int], ...] = (
 )
 
 
+def format_large_numbers(number: int | float | None) -> str:
+    if number is None:
+        return "0"
+    try:
+        value = int(number)
+    except Exception:
+        return str(number)
+    return "{:,}".format(value).replace(",", " ")
+
+
+def seconds_to_time(seconds: int | float | None) -> str:
+    """Format seconds as HH:MM:SS or MM:SS."""
+    total = max(0, int(seconds or 0))
+    hours = total // 3600
+    minutes = (total % 3600) // 60
+    secs = total % 60
+    if hours == 0:
+        return f"{minutes:02d}:{secs:02d}"
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
 def format_duration(seconds: int, translate: Callable[[str], str]) -> str:
     """format seconds into a localized human-readable duration"""
     seconds = max(0, int(seconds))
@@ -68,7 +89,7 @@ class MessageDeleteView(disnake.ui.View):
         super().__init__(timeout=None)
 
     @disnake.ui.button(
-        emoji=emojis.icon_remove, style=disnake.ButtonStyle.secondary, row=0
+        label="Delete this message", style=disnake.ButtonStyle.secondary, row=0
     )
     async def remove_button(
         self,

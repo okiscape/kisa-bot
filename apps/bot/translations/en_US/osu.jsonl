@@ -1,0 +1,110 @@
+{
+    "osu": {
+        "command": {
+            "description": "osu! commands"
+        },
+        "search_beatmapset": {
+            "description": "View info about a beatmapset",
+            "option": {
+                "query": {
+                    "description": "Beatmapset search query"
+                }
+            },
+            "not_found": "Beatmap not found!",
+            "tag": {
+                "nsfw": "**NSFW**",
+                "non_score": "Non-scoreable",
+                "ranked": "**Ranked**",
+                "loved": "**Loved**",
+                "graveyard": "**Graveyard**",
+                "qualified": "**Qualified**",
+                "wip": "**WIP**",
+                "pending": "**Pending**"
+            },
+            "ranked_date": "\nRanked on: **<t:{ts}:D>**",
+            "body": "> {tags}\nMapper: **[`{creator}`](https://osu.ppy.sh/users/{creator_id})** :flag_{country}:\nBeatmapset ID: `{beatmapset_id}`\n\nLast updated: **<t:{updated}:D>**\nSubmitted: **<t:{submitted}:D>**{ranked}\n\n{diffs}",
+            "diff_line": "**[`{stars}`]({url})** | [**{version}**]({url}) | {length_emoji} {length}\n> {circles_emoji} {circles} | {sliders_emoji} {sliders}\n> *HP: {hp} | CS: {cs} | AR: {ar} | OD: {od}*\n",
+            "your_score_title": "Your score",
+            "map_link": "Open beatmapset"
+        },
+        "search_score": {
+            "description": "View info about a score by ID",
+            "option": {
+                "score_id": {
+                    "description": "Score ID"
+                }
+            },
+            "not_found": "Score not found!",
+            "open_score": "Open score",
+            "open_beatmapset": "Open beatmapset"
+        },
+        "link_profile": {
+            "description": "Link your Discord and osu! accounts",
+            "already_linked": "Account already linked!",
+            "redirect": "Link your osu! account in the dashboard Integrations page.",
+            "open_dashboard": "Open dashboard",
+            "dashboard_missing": "Dashboard URL is not configured. Set `DASHBOARD_URL` on the bot."
+        },
+        "playing": {
+            "description": "View the map the mentioned person is playing",
+            "option": {
+                "user": {
+                    "description": "Member to check"
+                }
+            },
+            "not_playing": "This user is not playing osu! right now!"
+        },
+        "profile": {
+            "description": "View an osu! profile if it is linked to Discord",
+            "option": {
+                "user": {
+                    "description": "Member whose osu! profile to view"
+                }
+            },
+            "not_linked": "This user has not linked their osu! and Discord accounts!",
+            "unspecified": "not set",
+            "style": {
+                "mouse": "mouse",
+                "keyboard": "keyboard",
+                "tablet": "tablet",
+                "touch": "touchscreen"
+            },
+            "body": "\n> Country rank: **{country_rank}**\n> Global rank: **{global_rank}**\n\nInterests: `{interests}`\nUser ID: **`{user_id}`**\nOccupation: **{occupation}**\nFormerly known as: `{previous}`\nDiscord: **{discord}**\nForum posts: **{posts}**\nComments: **{comments}**\n",
+            "stats_name": "{username} statistics",
+            "stats_value": "> Kudosu: **{kudosu}**\n> Main mode: **{playmode}**\n> Level: **{level}**\n> PP: **{pp}**\n> Max combo: **{max_combo}**\n> Total score: **{total_score}**\n> Play time: **{play_time}**\n> Play style: **{play_style}**\n> Joined: <t:{joined}:D>",
+            "grades_name": "Grade counts",
+            "grades_value": "> {ssh} - **{ssh_n}**\n> {ss} - **{ss_n}**\n> {sh} - **{sh_n}**\n> {s} - **{s_n}**\n> {a} - **{a_n}**",
+            "hits_name": "Hit counts",
+            "hits_value": "> Total - __**{total}**__\n> `300` - **{n300}**\n> `100` - **{n100}**\n> `50 ` - **{n50}**\n> ` X ` - **{miss}**\nMaps played: **{plays}**",
+            "maps_name": "Beatmap counts",
+            "maps_value": "> `Guest maps` - **{guest}**\n> `Loved maps` - **{loved}**\n> `Ranked` - **{ranked}**\n> `Pending` - **{pending}**\n> `Unranked` - **{unranked}**\n> `Graveyard` - **{graveyard}**",
+            "month_plays": "Month / plays",
+            "month_replays": "Month / replay views",
+            "no_replays": "0 views",
+            "open_profile": "Open profile",
+            "remove": "Remove",
+            "recent_title": "| Latest activity",
+            "recent": {
+                "achievement": "> Achievement unlocked: `{name}`\n*{description}*\n - <t:{ts}:R>",
+                "rank": "> Set a **{rank}** rank on `{title}`\n - <t:{ts}:R>",
+                "rank_lost": "> Lost #1 on `{title}`\n - <t:{ts}:R>",
+                "username_change": "> Username changed: `{previous}` → **`{username}`**\n - <t:{ts}:R>",
+                "beatmapset_approve": "> Beatmap approved — {approval}\n - <t:{ts}:R>",
+                "beatmapset_update": "> Beatmap updated — {title}\n - <t:{ts}:R>",
+                "beatmapset_delete": "> Beatmap deleted — {title}\n - <t:{ts}:R>",
+                "beatmapset_upload": "> Beatmap uploaded — {title}\n - <t:{ts}:R>",
+                "beatmapset_revive": "> Beatmap revived — {title}\n - <t:{ts}:R>",
+                "support_first": "> Bought osu!supporter\n - <t:{ts}:R>",
+                "support_gift": "> Gifted osu!supporter\n - <t:{ts}:R>"
+            }
+        },
+        "score": {
+            "rank": "# Rank: {rank}",
+            "body_map": "> Difficulty: [`{version}`](https://osu.ppy.sh/beatmapsets/{beatmapset_id})\n> Set __**<t:{created}:D>**__\n> Combo: **{combo} {fc}** / {max_combo}\n> Score: **{score}**\n> Accuracy: **{accuracy}**\n> PP: **{pp}**\n> Score ID: `{score_id}`\n\n`All` - __**{total}**__\n`300` - **{n300}**\n`100` - **{n100}**\n`50 ` - **{n50}**\n` X ` - **{miss}**\n\nMods: {mods}\n`       {mods_text}`",
+            "body_id": "> Set __**<t:{created}:D>**__\n> Combo: **{combo} {fc}** / {max_combo}\n> Score: **{score}**\n> Accuracy: **{accuracy}**\n> Stars: **{stars}**\n> PP: **{pp}**\nBeatmapset ID ([link](https://osu.ppy.sh/beatmapsets/{beatmapset_id})): **`[ {beatmapset_id} ]`**\n\n`Sum` - __**{total}**__\n`300` - **{n300}**\n`100` - **{n100}**\n`50 ` - **{n50}**\n` X ` - **{miss}**\n\nSet by: **[{username}](https://osu.ppy.sh/users/{user_id})**\n\nMods: {mods}"
+        },
+        "error": {
+            "api_unavailable": "osu! API is not configured on this bot."
+        }
+    }
+}

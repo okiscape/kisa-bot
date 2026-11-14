@@ -24,6 +24,7 @@
             "idle": "Idle",
             "offline": "Offline"
         },
+				"send_as_ephemeral": "Send as ephemeral message",
         "user_flags": {
             "public": {
                 "staff": "Discord Staff",
