@@ -1,49 +1,10 @@
 import datetime
-
 import cog
 
 
 class AuditLog(cog.Cog):
     def __init__(self, bot: cog.KisaBot):
         self.bot = bot
-
-    @cog.slash_command(
-        name="set_log_channel",
-        description="Установить канал для логов (per-server).",
-        contexts=cog.InteractionContextTypes(guild=True),
-    )
-    async def set_log_channel(
-        self,
-        inter: cog.ApplicationCommandInteraction,
-        channel: cog.TextChannel = cog.Param(description="Куда отправлять логи"),
-    ):
-        await inter.response.defer(ephemeral=True)
-        if not inter.guild:
-            return
-        # Разрешаем либо админам, либо тем, у кого есть manage_guild.
-        perms = getattr(inter.author, "guild_permissions", None)
-        if perms and not (
-            getattr(perms, "administrator", False)
-            or getattr(perms, "manage_guild", False)
-        ):
-            await inter.edit_original_response("Нет прав для настройки логов.")
-            return
-
-        if not await self.bot.database.readServerSettings(inter.guild.id):
-            await self.bot.database.createServerSettings(
-                guild_id=inter.guild.id, log_channel=channel.id
-            )
-        else:
-            await self.bot.database.updateServerSettings(
-                inter.guild.id, log_channel=channel.id
-            )
-
-        embed = cog.Embed(
-            title="Логи настроены",
-            description=f"Канал логов: {channel.mention}",
-            color=0x2F3136,
-        )
-        await inter.edit_original_response(embed=embed)
 
     async def _log_channel_id(self, guild_id: int) -> int | None:
         settings = await self.bot.database.readServerSettings(guild_id)

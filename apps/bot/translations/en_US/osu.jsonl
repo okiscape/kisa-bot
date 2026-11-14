@@ -69,21 +69,56 @@
                 "tablet": "tablet",
                 "touch": "touchscreen"
             },
-            "body": "\n> Country rank: **{country_rank}**\n> Global rank: **{global_rank}**\n\nInterests: `{interests}`\nUser ID: **`{user_id}`**\nOccupation: **{occupation}**\nFormerly known as: `{previous}`\nDiscord: **{discord}**\nForum posts: **{posts}**\nComments: **{comments}**\n",
+            "body": "
+						> Country rank: **{country_rank}**
+						> Global rank: **{global_rank}**
+						
+						Interests: `{interests}`
+						User ID: **`{user_id}`**
+						Occupation: **{occupation}**
+						Formerly known as: `{previous}`
+						Discord: **{discord}**
+						Forum posts: **{posts}**
+						Comments: **{comments}**
+						",
             "stats_name": "{username} statistics",
-            "stats_value": "> Kudosu: **{kudosu}**\n> Main mode: **{playmode}**\n> Level: **{level}**\n> PP: **{pp}**\n> Max combo: **{max_combo}**\n> Total score: **{total_score}**\n> Play time: **{play_time}**\n> Play style: **{play_style}**\n> Joined: <t:{joined}:D>",
+            "stats_value": "> Kudosu: **{kudosu}**
+						> Main mode: **{playmode}**
+						> Level: **{level}**
+						> PP: **{pp}**
+						> Max combo: **{max_combo}**
+						> Total score: **{total_score}**
+						> Play time: **{play_time}**
+						> Play style: **{play_style}**
+						> Joined: <t:{joined}:D>",
             "grades_name": "Grade counts",
-            "grades_value": "> {ssh} - **{ssh_n}**\n> {ss} - **{ss_n}**\n> {sh} - **{sh_n}**\n> {s} - **{s_n}**\n> {a} - **{a_n}**",
+            "grades_value": "> Total - __**{total}**__
+						> `SSX` - **{ssh_n}**
+						> `SS ` - **{ss_n}**
+						> `SX ` - **{sh_n}**
+						> ` S` - **{s_n}**
+						> ` A` - **{a_n}**",
             "hits_name": "Hit counts",
-            "hits_value": "> Total - __**{total}**__\n> `300` - **{n300}**\n> `100` - **{n100}**\n> `50 ` - **{n50}**\n> ` X ` - **{miss}**\nMaps played: **{plays}**",
+            "hits_value": "> Total - __**{total}**__
+						> `300` - **{n300}**
+						> `100` - **{n100}**
+						> `50 ` - **{n50}**
+						> ` X ` - **{miss}**
+						Maps played: **{plays}**",
             "maps_name": "Beatmap counts",
-            "maps_value": "> `Guest maps` - **{guest}**\n> `Loved maps` - **{loved}**\n> `Ranked` - **{ranked}**\n> `Pending` - **{pending}**\n> `Unranked` - **{unranked}**\n> `Graveyard` - **{graveyard}**",
+            "maps_value": "> Total - __**{total}**__
+						> `Guest maps` - **{guest}**
+						> `Loved maps` - **{loved}**
+						> `Ranked` - **{ranked}**
+						> `Pending` - **{pending}**
+						> `Unranked` - **{unranked}**
+						> `Graveyard` - **{graveyard}**",
             "month_plays": "Month / plays",
             "month_replays": "Month / replay views",
             "no_replays": "0 views",
             "open_profile": "Open profile",
             "remove": "Remove",
-            "recent_title": "| Latest activity",
+            "recent_title": "Latest activity",
             "recent": {
                 "achievement": "> Achievement unlocked: `{name}`\n*{description}*\n - <t:{ts}:R>",
                 "rank": "> Set a **{rank}** rank on `{title}`\n - <t:{ts}:R>",

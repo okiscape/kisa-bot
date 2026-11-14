@@ -90,6 +90,7 @@ listener = disnake_cog.listener
 from utils import config, emojis
 from utils import shortcuts as sh
 from utils.bot_class import KisaBot
+from ossapi import User as OsuUser
 
 T = TypeVar("T")
 LocalizedRequired = Union[str, "Localized[str]"]  # type: ignore
