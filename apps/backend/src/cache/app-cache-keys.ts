@@ -63,3 +63,16 @@ export function guildMetricsCacheKeys(
     guildMetricsCacheKey(guildId, range),
   );
 }
+
+/** Reaction-role panel lookup by Discord message id (bot + backend). */
+export function reactionRoleMessageCacheKey(
+  messageId: string | number | bigint,
+): string {
+  return `app:rr:msg:${String(messageId)}`;
+}
+
+export function reactionRoleGuildCacheKey(
+  guildId: string | number | bigint,
+): string {
+  return `app:guild:${String(guildId)}:reaction-roles`;
+}

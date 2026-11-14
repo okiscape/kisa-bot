@@ -112,6 +112,43 @@ model GuildDailyMetrics {
   @@map("guild_daily_metrics")
 }
 
+/// Reaction-role panel posted (or attached) to a Discord message.
+model ReactionRolePanel {
+  id         String   @id @default(cuid())
+  guildId    BigInt   @map("guild_id")
+  channelId  BigInt   @map("channel_id")
+  messageId  BigInt?  @map("message_id")
+  /// post_embed | post_message | existing
+  mode       String
+  /// normal | verify | unique
+  type       String   @default("normal")
+  content    String   @default("") @db.Text
+  /// { title, description, color, imageUrl, thumbnailUrl }
+  embed      Json?
+  botOwned   Boolean  @default(true) @map("bot_owned")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  pairs      ReactionRolePair[]
+
+  @@index([guildId])
+  @@unique([messageId])
+  @@map("reaction_role_panels")
+}
+
+model ReactionRolePair {
+  id       String            @id @default(cuid())
+  panelId  String            @map("panel_id")
+  /// Unicode emoji, or custom `name:id` / `a:name:id` (animated)
+  emoji    String            @db.Text
+  roleId   BigInt            @map("role_id")
+  position Int               @default(0)
+  panel    ReactionRolePanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@unique([panelId, emoji])
+  @@index([panelId])
+  @@map("reaction_role_pairs")
+}
+
 /// Backend-owned opaque web sessions. Discord tokens are encrypted at rest.
 model WebSession {
   id                     String    @id @db.Text

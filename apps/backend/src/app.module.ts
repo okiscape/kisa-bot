@@ -9,6 +9,7 @@ import { CacheModule } from "./cache/cache.module";
 import { DiscordModule } from "./discord/discord.module";
 import { AuthModule } from "./auth/auth.module";
 import { GuildsModule } from "./guilds/guilds.module";
+import { ReactionRolesModule } from "./reaction-roles/reaction-roles.module";
 import { UsersModule } from "./users/users.module";
 import { IntegrationsModule } from "./integrations/integrations.module";
 import { MetricsModule } from "./metrics/metrics.module";
@@ -40,6 +41,7 @@ import { CsrfGuard } from "./auth/guards/csrf.guard";
     DiscordModule,
     AuthModule,
     GuildsModule,
+    ReactionRolesModule,
     UsersModule,
     IntegrationsModule,
     MetricsModule,

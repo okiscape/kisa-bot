@@ -47,6 +47,10 @@ def guild_metrics_keys(guild_id: int | str) -> list[str]:
     return [guild_metrics_key(guild_id, range_key) for range_key in GUILD_METRICS_RANGES]
 
 
+def reaction_role_message_key(message_id: int | str) -> str:
+    return f"app:rr:msg:{message_id}"
+
+
 @dataclass(frozen=True)
 class RedisLookup:
     """Distinguish cache hit / miss from Redis being disabled or down."""

@@ -58,7 +58,7 @@ function normalizeEmbedField(raw: unknown): MessageEmbedField | null {
   };
 }
 
-function normalizeEmbed(raw: unknown): MessageEmbedConfig | null {
+export function normalizeMessageEmbed(raw: unknown): MessageEmbedConfig | null {
   if (!raw || typeof raw !== "object") return null;
   const e = raw as Record<string, unknown>;
   const author =
@@ -98,7 +98,7 @@ export function normalizeMessageConfig(raw: unknown): MessageConfig | null {
   const sender = c.sender === "webhook" ? "webhook" : "bot";
   const embeds = Array.isArray(c.embeds)
     ? c.embeds
-        .map(normalizeEmbed)
+        .map(normalizeMessageEmbed)
         .filter((e): e is MessageEmbedConfig => e !== null)
         .slice(0, 5)
     : [];
@@ -111,6 +111,46 @@ export function normalizeMessageConfig(raw: unknown): MessageConfig | null {
     content: typeof c.content === "string" ? c.content.slice(0, 2000) : "",
     embeds,
   };
+}
+
+/** Convert stored embed config to Discord REST embed payload. */
+export function embedToDiscordApiPayload(
+  embed: MessageEmbedConfig,
+): Record<string, unknown> | null {
+  const out: Record<string, unknown> = {};
+  if (embed.title) out.title = embed.title;
+  if (embed.description) out.description = embed.description;
+  if (embed.url) out.url = embed.url;
+  if (embed.color) {
+    const hex = embed.color.replace(/^#/, "");
+    const n = Number.parseInt(hex, 16);
+    if (!Number.isNaN(n)) out.color = n;
+  }
+  if (embed.authorName) {
+    out.author = {
+      name: embed.authorName,
+      ...(embed.authorIconUrl ? { icon_url: embed.authorIconUrl } : {}),
+      ...(embed.authorUrl ? { url: embed.authorUrl } : {}),
+    };
+  }
+  if (embed.footerText) {
+    out.footer = {
+      text: embed.footerText,
+      ...(embed.footerIconUrl ? { icon_url: embed.footerIconUrl } : {}),
+    };
+  }
+  if (embed.imageUrl) out.image = { url: embed.imageUrl };
+  if (embed.thumbnailUrl) out.thumbnail = { url: embed.thumbnailUrl };
+  const fields = (embed.fields ?? [])
+    .filter((f) => f.name.trim() || f.value.trim())
+    .map((f) => ({
+      name: f.name || "\u200b",
+      value: f.value || "\u200b",
+      inline: Boolean(f.inline),
+    }));
+  if (fields.length) out.fields = fields;
+
+  return Object.keys(out).length ? out : null;
 }
 
 export function synthesizeGreetingConfig(row: {

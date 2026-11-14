@@ -142,6 +142,42 @@ export interface LoggingRule {
   ignoreItems: string[];
 }
 
+export type ReactionRoleMode = "post_embed" | "post_message" | "existing";
+export type ReactionRoleType = "normal" | "verify" | "unique";
+
+export type ReactionRoleEmbed = MessageEmbedConfig;
+
+export interface ReactionRolePair {
+  id: string;
+  emoji: string;
+  roleId: string;
+  position: number;
+}
+
+export interface ReactionRolePanel {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string | null;
+  mode: ReactionRoleMode;
+  type: ReactionRoleType;
+  content: string;
+  embed: ReactionRoleEmbed | null;
+  botOwned: boolean;
+  pairs: ReactionRolePair[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GuildEmoji {
+  id: string;
+  name: string;
+  animated: boolean;
+  available: boolean;
+  url: string;
+  key: string;
+}
+
 export interface UserSettings {
   userId: string;
   timezone: string | null;

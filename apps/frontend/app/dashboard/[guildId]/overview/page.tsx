@@ -18,6 +18,7 @@ import "./overview.css"
 
 const LINKS = [
 	{ href: "greeting", label: "Greeting", desc: "Join and leave messages" },
+	{ href: "reaction-roles", label: "Reaction roles", desc: "Emoji roles on messages" },
 	{ href: "moderation", label: "Moderation", desc: "Bad words and mute role" },
 	{ href: "logging", label: "Logging", desc: "Event log destinations" },
 	{ href: "other", label: "Other", desc: "Tickets, private rooms, honeypot" },

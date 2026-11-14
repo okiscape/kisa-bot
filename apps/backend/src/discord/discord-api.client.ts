@@ -9,7 +9,9 @@ import { ConfigService } from "@nestjs/config";
 import { ErrorCodes } from "../common/types/error-codes";
 import {
   DiscordApiChannel,
+  DiscordApiEmoji,
   DiscordApiGuild,
+  DiscordApiMessage,
   DiscordApiRole,
   DiscordApiUser,
   DiscordTokenResponse,
@@ -269,6 +271,172 @@ export class DiscordApiClient {
         position: c.position,
         parent_id: c.parent_id,
       }));
+  }
+
+  async getGuildEmojis(guildId: string): Promise<DiscordApiEmoji[]> {
+    const res = await this.request(`/guilds/${guildId}/emojis`, {
+      token: this.discordConfig("botToken"),
+      tokenKind: "Bot",
+    });
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to fetch guild emojis");
+    }
+    const emojis = (await res.json()) as Array<{
+      id: string;
+      name: string | null;
+      animated?: boolean;
+      available?: boolean;
+      managed?: boolean;
+    }>;
+    return emojis
+      .filter((e) => e.id && e.name)
+      .map((e) => ({
+        id: e.id,
+        name: e.name as string,
+        animated: Boolean(e.animated),
+        available: e.available !== false,
+        managed: Boolean(e.managed),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getChannelMessage(
+    channelId: string,
+    messageId: string,
+  ): Promise<DiscordApiMessage> {
+    const res = await this.request(
+      `/channels/${channelId}/messages/${messageId}`,
+      {
+        token: this.discordConfig("botToken"),
+        tokenKind: "Bot",
+      },
+    );
+    if (res.status === 404) {
+      throw new HttpException(
+        {
+          code: ErrorCodes.NOT_FOUND,
+          message: "Message not found",
+        },
+        404,
+      );
+    }
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to fetch message");
+    }
+    return res.json() as Promise<DiscordApiMessage>;
+  }
+
+  async createChannelMessage(
+    channelId: string,
+    body: {
+      content?: string;
+      embeds?: Array<Record<string, unknown>>;
+    },
+  ): Promise<DiscordApiMessage> {
+    const res = await this.request(`/channels/${channelId}/messages`, {
+      method: "POST",
+      token: this.discordConfig("botToken"),
+      tokenKind: "Bot",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to create message");
+    }
+    return res.json() as Promise<DiscordApiMessage>;
+  }
+
+  async editChannelMessage(
+    channelId: string,
+    messageId: string,
+    body: {
+      content?: string | null;
+      embeds?: Array<Record<string, unknown>> | null;
+    },
+  ): Promise<DiscordApiMessage> {
+    const res = await this.request(
+      `/channels/${channelId}/messages/${messageId}`,
+      {
+        method: "PATCH",
+        token: this.discordConfig("botToken"),
+        tokenKind: "Bot",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    );
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to edit message");
+    }
+    return res.json() as Promise<DiscordApiMessage>;
+  }
+
+  async deleteChannelMessage(
+    channelId: string,
+    messageId: string,
+  ): Promise<void> {
+    const res = await this.request(
+      `/channels/${channelId}/messages/${messageId}`,
+      {
+        method: "DELETE",
+        token: this.discordConfig("botToken"),
+        tokenKind: "Bot",
+      },
+    );
+    if (res.status === 404) return;
+    if (!res.ok) {
+      throw this.mapUpstreamError(res.status, "Failed to delete message");
+    }
+  }
+
+  /**
+   * `emoji` is either a unicode emoji or `name:id` / `a:name:id` for custom.
+   * Discord expects URL-encoded emoji path segment.
+   */
+  async createReaction(
+    channelId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<void> {
+    const encoded = this.encodeReactionEmoji(emoji);
+    const res = await this.request(
+      `/channels/${channelId}/messages/${messageId}/reactions/${encoded}/@me`,
+      {
+        method: "PUT",
+        token: this.discordConfig("botToken"),
+        tokenKind: "Bot",
+      },
+    );
+    if (!res.ok && res.status !== 204) {
+      throw this.mapUpstreamError(res.status, "Failed to add reaction");
+    }
+  }
+
+  async deleteOwnReaction(
+    channelId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<void> {
+    const encoded = this.encodeReactionEmoji(emoji);
+    const res = await this.request(
+      `/channels/${channelId}/messages/${messageId}/reactions/${encoded}/@me`,
+      {
+        method: "DELETE",
+        token: this.discordConfig("botToken"),
+        tokenKind: "Bot",
+      },
+    );
+    if (res.status === 404) return;
+    if (!res.ok && res.status !== 204) {
+      throw this.mapUpstreamError(res.status, "Failed to remove reaction");
+    }
+  }
+
+  encodeReactionEmoji(emoji: string): string {
+    const custom = emoji.match(/^(a:)?([\w-]+):(\d{17,20})$/);
+    if (custom) {
+      return encodeURIComponent(`${custom[2]}:${custom[3]}`);
+    }
+    return encodeURIComponent(emoji);
   }
 
   /**

@@ -8,6 +8,7 @@ KisaBot(
         "cogs.data.rating",
         "cogs.data.serververse",
         "cogs.data.settings",
+        "cogs.data.reaction_roles",
         "cogs.data.profile",
 
         "cogs.informations.feedback",

@@ -6,6 +6,7 @@ from utils.bot_logging import Logging
 from utils.redis_client import (
     SETTINGS_CACHE_TTL_SECONDS,
     guild_settings_key,
+    reaction_role_message_key,
     redis_delete,
     redis_get_json,
     redis_set_json,
@@ -103,6 +104,26 @@ db_schema = {
         "messages": "INTEGER NOT NULL DEFAULT 0",
         "joins": "INTEGER NOT NULL DEFAULT 0",
         "leaves": "INTEGER NOT NULL DEFAULT 0",
+    },
+    "reaction_role_panels": {
+        "id": "TEXT PRIMARY KEY",
+        "guild_id": "BIGINT NOT NULL",
+        "channel_id": "BIGINT NOT NULL",
+        "message_id": "BIGINT",
+        "mode": "TEXT NOT NULL",
+        "type": "TEXT NOT NULL DEFAULT 'normal'",
+        "content": "TEXT NOT NULL DEFAULT ''",
+        "embed": "JSONB",
+        "bot_owned": "BOOLEAN NOT NULL DEFAULT TRUE",
+        "created_at": "TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+        "updated_at": "TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+    },
+    "reaction_role_pairs": {
+        "id": "TEXT PRIMARY KEY",
+        "panel_id": "TEXT NOT NULL",
+        "emoji": "TEXT NOT NULL",
+        "role_id": "BIGINT NOT NULL",
+        "position": "INTEGER NOT NULL DEFAULT 0",
     },
 }
 # { table: {column-name: column-type} }
@@ -1419,4 +1440,68 @@ class DatabaseManager:
             max(0, int(leaves)),
             no_fetch=True,
         )
+
+    async def get_reaction_role_panel_by_message(
+        self, message_id: int
+    ) -> dict | None:
+        """Return panel + pairs for a Discord message, Redis-cached briefly."""
+        cache_key = reaction_role_message_key(message_id)
+        try:
+            lookup = await redis_get_json(cache_key)
+            if lookup.status == "hit":
+                return lookup.value
+        except Exception:
+            pass
+
+        row = await self.db.execute(
+            """
+            SELECT id, guild_id, channel_id, message_id, mode, type, bot_owned
+            FROM reaction_role_panels
+            WHERE message_id = ?
+            LIMIT 1
+            """,
+            message_id,
+        )
+        if not row or not row.fetchone:
+            try:
+                await redis_set_json(cache_key, None, ttl_seconds=30)
+            except Exception:
+                pass
+            return None
+
+        panel = row.fetchone
+        pairs_res = await self.db.execute(
+            """
+            SELECT emoji, role_id, position
+            FROM reaction_role_pairs
+            WHERE panel_id = ?
+            ORDER BY position ASC
+            """,
+            panel[0],
+        )
+        pairs = []
+        for emoji, role_id, position in pairs_res.fetchall or ():
+            pairs.append(
+                {
+                    "emoji": emoji,
+                    "role_id": int(role_id),
+                    "position": int(position or 0),
+                }
+            )
+
+        payload = {
+            "id": panel[0],
+            "guild_id": int(panel[1]),
+            "channel_id": int(panel[2]),
+            "message_id": int(panel[3]) if panel[3] is not None else None,
+            "mode": panel[4],
+            "type": panel[5] or "normal",
+            "bot_owned": bool(panel[6]),
+            "pairs": pairs,
+        }
+        try:
+            await redis_set_json(cache_key, payload, ttl_seconds=30)
+        except Exception:
+            pass
+        return payload
 

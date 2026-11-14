@@ -18,6 +18,7 @@ type GuildDetail = {
 const NAV = [
 	{ slug: "overview", label: "Overview" },
 	{ slug: "greeting", label: "Greet/Farewell" },
+	{ slug: "reaction-roles", label: "Reaction roles" },
 	{ slug: "moderation", label: "Moderation" },
 	{ slug: "logging", label: "Logging" },
 	{ slug: "other", label: "Other" },
@@ -59,7 +60,11 @@ export default function GuildLayout({ children }: { children: React.ReactNode })
 	}, [guildId])
 
 	const active = useMemo(() => {
-		const match = NAV.find((item) => pathname.endsWith(`/${item.slug}`))
+		const match = NAV.find(
+			(item) =>
+				pathname.endsWith(`/${item.slug}`) ||
+				pathname.includes(`/${item.slug}/`),
+		)
 		return match?.slug ?? "overview"
 	}, [pathname])
 

@@ -6,12 +6,12 @@ export function FormRow({
 	label,
 	hint,
 	children,
-	column=null
+	column = null,
 }: {
 	label: string
 	hint?: string
 	children: React.ReactNode
-	column: boolean | null
+	column?: boolean | null
 }) {
 	return (
 		<div className={`form-row${column ? ' col' : ""}`}>
@@ -54,16 +54,19 @@ export function SelectField({
 	onChange,
 	options,
 	placeholder = "Select…",
+	disabled = false,
 }: {
 	value: string | null
 	onChange: (value: string | null) => void
 	options: Array<{ value: string; label: string }>
 	placeholder?: string
+	disabled?: boolean
 }) {
 	return (
 		<select
 			className="select-field"
 			value={value ?? ""}
+			disabled={disabled}
 			onChange={(e) => onChange(e.target.value || null)}
 		>
 			<option value="">{placeholder}</option>
@@ -108,20 +111,23 @@ export function TextField({
 	onChange,
 	placeholder,
 	className,
+	disabled = false,
 }: {
-	label: string
+	label?: string
 	value: string
 	onChange: (value: string) => void
 	placeholder?: string
 	className?: string
+	disabled?: boolean
 }) {
 	return (
 		<label className={`text-field${className ? ` ${className}` : ""}`}>
-			<span>{label}</span>
+			{label ? <span>{label}</span> : null}
 			<input
 				type="text"
 				value={value}
 				placeholder={placeholder}
+				disabled={disabled}
 				onChange={(e) => onChange(e.target.value)}
 			/>
 		</label>

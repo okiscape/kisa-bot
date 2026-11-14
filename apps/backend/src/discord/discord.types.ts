@@ -57,6 +57,22 @@ export interface DiscordApiChannel {
   parent_id: string | null;
 }
 
+export interface DiscordApiEmoji {
+  id: string;
+  name: string;
+  animated: boolean;
+  available: boolean;
+  managed: boolean;
+}
+
+export interface DiscordApiMessage {
+  id: string;
+  channel_id: string;
+  guild_id?: string;
+  author: { id: string; bot?: boolean };
+  content: string;
+}
+
 /** Channel types useful for settings selects. */
 export const SETTINGS_CHANNEL_TYPES = {
   GUILD_TEXT: 0,
